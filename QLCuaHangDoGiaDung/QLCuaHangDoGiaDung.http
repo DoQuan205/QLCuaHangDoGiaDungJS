@@ -1,0 +1,6 @@
+@QLCuaHangDoGiaDung_HostAddress = http://localhost:5047
+
+GET {{QLCuaHangDoGiaDung_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
