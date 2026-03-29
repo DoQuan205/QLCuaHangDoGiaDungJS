@@ -27,6 +27,12 @@ builder.Services.AddScoped<NhanVien_BLL>();
 builder.Services.AddScoped<KhachHang_DAL>();
 builder.Services.AddScoped<KhachHang_BLL>();
 
+builder.Services.AddScoped<DonNhap_DAL>();
+builder.Services.AddScoped<DonNhap_BLL>();
+
+builder.Services.AddScoped<ChiTietDonNhap_DAL>();
+builder.Services.AddScoped<ChiTietDonNhap_BLL>();
+
 // 🔹 CORS (cho frontend)
 builder.Services.AddCors(options =>
 {
