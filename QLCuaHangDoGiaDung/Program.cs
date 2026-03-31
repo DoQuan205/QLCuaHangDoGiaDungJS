@@ -33,6 +33,18 @@ builder.Services.AddScoped<DonNhap_BLL>();
 builder.Services.AddScoped<ChiTietDonNhap_DAL>();
 builder.Services.AddScoped<ChiTietDonNhap_BLL>();
 
+builder.Services.AddScoped<NhaCungCap_DAL>();
+builder.Services.AddScoped<NhaCungCap_BLL>();
+
+builder.Services.AddScoped<DonXuat_DAL>();
+builder.Services.AddScoped<DonXuat_BLL>();
+
+builder.Services.AddScoped<ChiTietDonXuat_DAL>();
+builder.Services.AddScoped<ChiTietDonXuat_BLL>();
+
+builder.Services.AddScoped<MaGiamGia_DAL>();
+builder.Services.AddScoped<MaGiamGia_BLL>();
+
 // 🔹 CORS (cho frontend)
 builder.Services.AddCors(options =>
 {
