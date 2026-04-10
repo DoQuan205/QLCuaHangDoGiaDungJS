@@ -50,9 +50,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FE", policy =>
     {
-        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "http://127.0.0.1:5500", 
+            "http://localhost:5500",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
