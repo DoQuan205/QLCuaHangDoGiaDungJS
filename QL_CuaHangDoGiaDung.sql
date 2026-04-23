@@ -1,7 +1,7 @@
-CREATE DATABASE QL_CuaHangHoaQua;
+CREATE DATABASE QL_CuaHangDoGiaDung;
 GO
 
-USE QL_CuaHangHoaQua;
+USE QL_CuaHangDoGiaDung;
 GO
 
 CREATE TABLE PhanQuyen (
@@ -93,6 +93,7 @@ CREATE TABLE DonXuat (
     MaNhanVien INT,
     MaKhachHang INT,
     TongTien FLOAT,
+    TrangThai NVARCHAR(20) NOT NULL DEFAULT N'Đợi',
 
     FOREIGN KEY (MaNhanVien) REFERENCES NhanVien(MaNhanVien),
     FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang)
@@ -141,8 +142,9 @@ VALUES
 
 INSERT INTO LoaiSanPham (TenLoai, MoTa)
 VALUES 
-(N'Trái cây nội địa', N'Trái cây Việt Nam'),
-(N'Trái cây nhập khẩu', N'Hàng nhập khẩu');
+(N'Đồ dùng nhà bếp', N'Dụng cụ nấu ăn, chế biến thực phẩm'),
+(N'Đồ điện gia dụng', N'Thiết bị điện dùng trong gia đình'),
+(N'Đồ gia dụng', N'Các sản phẩm phục vụ sinh hoạt gia đình');
 
 INSERT INTO NhaCungCap (TenNhaCungCap, SoDienThoai, DiaChi, Email)
 VALUES 
@@ -255,3 +257,45 @@ UNION ALL SELECT N'Chi tiết đơn xuất', COUNT(*) FROM ChiTietDonXuat;
 
 -- Hiển thị một số sản phẩm
 SELECT TOP 5 MaSanPham, TenSanPham, GiaBan, SoLuong FROM SanPham;
+
+INSERT INTO LoaiSanPham (TenLoai, MoTa)
+VALUES 
+(N'Đồ vệ sinh nhà cửa', N'Dụng cụ lau dọn, vệ sinh nhà cửa'),
+(N'Đồ nhựa gia dụng', N'Các sản phẩm bằng nhựa dùng trong sinh hoạt'),
+(N'Đồ thủy tinh', N'Ly, cốc, bình và vật dụng bằng thủy tinh'),
+(N'Đồ inox', N'Vật dụng nhà bếp bằng inox'),
+(N'Đồ điện nhỏ', N'Các thiết bị điện nhỏ như ấm siêu tốc, máy xay'),
+(N'Đồ phòng tắm', N'Vật dụng sử dụng trong phòng tắm'),
+(N'Đồ giặt là', N'Dụng cụ phục vụ giặt giũ và là ủi'),
+(N'Đồ trang trí nhà cửa', N'Vật dụng trang trí không gian sống'),
+(N'Đồ lưu trữ', N'Hộp, kệ, tủ đựng đồ'),
+(N'Đồ dùng phòng ăn', N'Bát, đĩa, đũa, muỗng'),
+(N'Đồ dùng tiện ích', N'Các sản phẩm tiện ích thông minh trong gia đình');
+
+INSERT INTO SanPham (TenSanPham, MaLoai, GiaBan, SoLuong, HinhAnh, MoTa)
+VALUES 
+-- Đồ dùng nhà bếp
+(N'Hộp đựng thực phẩm 5 món', 1, 220000, 90, 'https://images.unsplash.com/photo-1604908176997-4311c2a9d7bb?w=400', N'Hộp nhựa an toàn thực phẩm'),
+(N'Bộ muỗng đũa inox', 1, 120000, 150, 'https://images.unsplash.com/photo-1583778176476-4a8b02b9b0b2?w=400', N'Bộ 10 món inox cao cấp'),
+(N'Khay đựng gia vị', 1, 95000, 130, 'https://images.unsplash.com/photo-1606787366850-de6330128bfc?w=400', N'Khay nhựa 3 ngăn tiện lợi'),
+(N'Rổ inox đa năng', 1, 85000, 140, 'https://images.unsplash.com/photo-1576866209830-589e1bfbaa4d?w=400', N'Rổ inox chống gỉ'),
+(N'Dụng cụ bào rau củ', 1, 65000, 160, 'https://images.unsplash.com/photo-1582515073490-dc8c7f4d8b8c?w=400', N'Dụng cụ bào đa năng'),
+
+-- Đồ điện gia dụng
+(N'Lò vi sóng Electrolux', 2, 2350000, 20, 'https://images.unsplash.com/photo-1585238342028-78d0d2c75e2b?w=400', N'Lò vi sóng 20L'),
+(N'Máy sấy tóc Panasonic', 2, 420000, 70, 'https://images.unsplash.com/photo-1581579185169-7a6b76f1b4c4?w=400', N'Máy sấy 1200W'),
+(N'Đèn LED tuýp 1m2', 2, 180000, 100, 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?w=400', N'Đèn tiết kiệm điện'),
+
+-- Đồ vệ sinh & tiện ích
+(N'Cây lau nhà 360 độ', 3, 280000, 85, 'https://images.unsplash.com/photo-1581578017420-0d4b6f6b6b6b?w=400', N'Lau nhà xoay tiện lợi'),
+(N'Chổi quét nhà cán dài', 3, 90000, 120, 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=400', N'Chổi nhựa bền đẹp'),
+(N'Thùng rác có nắp', 3, 150000, 75, 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400', N'Thùng rác 15L'),
+
+-- Đồ trang trí & tiện ích
+(N'Đèn dây trang trí', 1, 120000, 110, 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400', N'Đèn LED dây 5m'),
+(N'Kệ treo tường mini', 1, 250000, 60, 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400', N'Kệ gỗ nhỏ gọn'),
+(N'Hộp đựng đồ đa năng', 1, 140000, 95, 'https://images.unsplash.com/photo-1588854337119-1f42a1a7d0b5?w=400', N'Hộp nhựa có nắp'),
+
+-- Đồ phòng tắm
+(N'Móc treo quần áo inox', 2, 80000, 130, 'https://images.unsplash.com/photo-1582582429416-9d62f0c52e56?w=400', N'Móc treo chống gỉ');
+GO

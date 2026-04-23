@@ -1,4 +1,4 @@
-﻿using DAL;
+using DAL;
 using QLCuaHangDoGiaDung.Models;
 
 namespace BLL
@@ -31,6 +31,12 @@ namespace BLL
         public bool Update(SanPham sp)
         {
             if (sp.MaSanPham <= 0)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(sp.TenSanPham))
+                return false;
+
+            if (sp.GiaBan <= 0 || sp.SoLuong < 0 || sp.MaLoai <= 0)
                 return false;
 
             return dal.Update(sp);

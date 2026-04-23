@@ -37,29 +37,33 @@ namespace DAL
                         NgayXuat = (DateTime)reader["NgayXuat"],
                         MaNhanVien = (int)reader["MaNhanVien"],
                         MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
-                        TongTien = Convert.ToDouble(reader["TongTien"])
+                        TongTien = Convert.ToDouble(reader["TongTien"]),
+                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
                     });
                 }
             }
             return ds;
         }
 
-        public bool Insert(DonXuat dx)
+        public DonXuat Insert(DonXuat dx)
         {
             using (SqlConnection conn = GetConn())
             {
                 conn.Open();
                 string sql = @"INSERT INTO DonXuat
-                (NgayXuat, MaNhanVien, MaKhachHang, TongTien)
-                VALUES (@NgayXuat, @MaNV, @MaKH, @TongTien)";
+                (NgayXuat, MaNhanVien, MaKhachHang, TongTien, TrangThai)
+                OUTPUT INSERTED.MaDonXuat
+                VALUES (@NgayXuat, @MaNV, @MaKH, @TongTien, @TrangThai)";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@NgayXuat", dx.NgayXuat);
                 cmd.Parameters.AddWithValue("@MaNV", dx.MaNhanVien);
                 cmd.Parameters.AddWithValue("@MaKH", (object)dx.MaKhachHang ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@TongTien", dx.TongTien);
+                cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrWhiteSpace(dx.TrangThai) ? "Đợi" : dx.TrangThai);
 
-                return cmd.ExecuteNonQuery() > 0;
+                dx.MaDonXuat = Convert.ToInt32(cmd.ExecuteScalar());
+                return dx;
             }
         }
 
@@ -72,7 +76,8 @@ namespace DAL
                     NgayXuat=@NgayXuat,
                     MaNhanVien=@MaNV,
                     MaKhachHang=@MaKH,
-                    TongTien=@TongTien
+                    TongTien=@TongTien,
+                    TrangThai=@TrangThai
                     WHERE MaDonXuat=@Ma";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
@@ -81,6 +86,7 @@ namespace DAL
                 cmd.Parameters.AddWithValue("@MaNV", dx.MaNhanVien);
                 cmd.Parameters.AddWithValue("@MaKH", (object)dx.MaKhachHang ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@TongTien", dx.TongTien);
+                cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrWhiteSpace(dx.TrangThai) ? "Đợi" : dx.TrangThai);
 
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -121,12 +127,56 @@ namespace DAL
                         NgayXuat = (DateTime)reader["NgayXuat"],
                         MaNhanVien = (int)reader["MaNhanVien"],
                         MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
-                        TongTien = Convert.ToDouble(reader["TongTien"])
+                        TongTien = Convert.ToDouble(reader["TongTien"]),
+                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
                     };
                 }
             }
 
             return dx;
+        }
+
+        public List<DonXuat> GetByMaKhachHang(int maKhachHang)
+        {
+            List<DonXuat> ds = new List<DonXuat>();
+
+            using (SqlConnection conn = GetConn())
+            {
+                conn.Open();
+                string sql = "SELECT * FROM DonXuat WHERE MaKhachHang = @MaKhachHang ORDER BY MaDonXuat DESC";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@MaKhachHang", maKhachHang);
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    ds.Add(new DonXuat
+                    {
+                        MaDonXuat = (int)reader["MaDonXuat"],
+                        NgayXuat = (DateTime)reader["NgayXuat"],
+                        MaNhanVien = (int)reader["MaNhanVien"],
+                        MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
+                        TongTien = Convert.ToDouble(reader["TongTien"]),
+                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
+                    });
+                }
+            }
+
+            return ds;
+        }
+
+        public bool UpdateStatus(int maDonXuat, string trangThai)
+        {
+            using (SqlConnection conn = GetConn())
+            {
+                conn.Open();
+                string sql = "UPDATE DonXuat SET TrangThai = @TrangThai WHERE MaDonXuat = @MaDonXuat";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@MaDonXuat", maDonXuat);
+                cmd.Parameters.AddWithValue("@TrangThai", trangThai);
+
+                return cmd.ExecuteNonQuery() > 0;
+            }
         }
     }
 }

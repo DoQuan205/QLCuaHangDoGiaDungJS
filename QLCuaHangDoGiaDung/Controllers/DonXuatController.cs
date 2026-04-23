@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
 using BLL;
 using QLCuaHangDoGiaDung.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    public class DonXuatStatusRequest
+    {
+        [Required]
+        public string TrangThai { get; set; } = string.Empty;
+    }
+
     public class DonXuatController : ControllerBase
     {
         private readonly DonXuat_BLL bll;
@@ -31,25 +38,49 @@ namespace API.Controllers
             return Ok(data);
         }
 
+        [HttpGet("KhachHang/{maKhachHang}")]
+        public IActionResult GetByMaKhachHang(int maKhachHang)
+        {
+            return Ok(bll.GetByMaKhachHang(maKhachHang));
+        }
+
         [HttpPost]
         public IActionResult Create(DonXuat dx)
         {
-            if (!bll.Insert(dx))
-                return BadRequest();
+            var createdOrder = bll.Insert(dx);
+            if (createdOrder == null)
+                return BadRequest(new { message = "Không thể tạo đơn xuất" });
 
-            return Ok("Thêm đơn xuất thành công");
+            return Ok(createdOrder);
         }
 
         [HttpPut("{id}")]
         public IActionResult Update(int id, DonXuat dx)
         {
-            if (id != dx.MaDonXuat)
-                return BadRequest();
+            var existingOrder = bll.GetById(id);
+            if (existingOrder == null)
+                return NotFound(new { message = "Không tìm thấy đơn hàng" });
+
+            dx.MaDonXuat = id;
+            dx.TrangThai = string.IsNullOrWhiteSpace(dx.TrangThai) ? existingOrder.TrangThai : dx.TrangThai;
 
             if (!bll.Update(dx))
-                return BadRequest();
+                return BadRequest(new { message = "Dữ liệu đơn hàng không hợp lệ" });
 
-            return Ok("Cập nhật thành công");
+            return Ok(new { message = "Cập nhật thành công" });
+        }
+
+        [HttpPut("{id}/status")]
+        public IActionResult UpdateStatus(int id, DonXuatStatusRequest request)
+        {
+            var existingOrder = bll.GetById(id);
+            if (existingOrder == null)
+                return NotFound(new { message = "Không tìm thấy đơn hàng" });
+
+            if (!bll.UpdateStatus(id, request.TrangThai))
+                return BadRequest(new { message = "Trạng thái đơn hàng không hợp lệ" });
+
+            return Ok(new { message = "Cập nhật trạng thái thành công" });
         }
 
         [HttpDelete("{id}")]

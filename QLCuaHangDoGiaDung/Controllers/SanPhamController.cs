@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using BLL;
 using QLCuaHangDoGiaDung.Models;
 
@@ -43,13 +43,16 @@ namespace API.Controllers
         [HttpPut("{id}")]
         public IActionResult Update(int id, SanPham sp)
         {
-            if (id != sp.MaSanPham)
-                return BadRequest();
+            var existingProduct = bll.GetById(id);
+            if (existingProduct == null)
+                return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+            sp.MaSanPham = id;
 
             if (!bll.Update(sp))
-                return BadRequest();
+                return BadRequest(new { message = "Dữ liệu sản phẩm không hợp lệ" });
 
-            return Ok("Cập nhật thành công");
+            return Ok(new { message = "Cập nhật thành công" });
         }
 
         [HttpDelete("{id}")]

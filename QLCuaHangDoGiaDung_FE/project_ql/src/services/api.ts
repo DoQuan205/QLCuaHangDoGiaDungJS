@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from 'axios/dist/browser/axios.cjs';
 
-const API_BASE_URL = 'http://localhost:5500/api';
+const API_BASE_URL = 'https://localhost:7172/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,13 +18,30 @@ export const productsAPI = {
   delete: (id: number) => api.delete(`/SanPham/${id}`),
 };
 
+// Auth API
+export const authAPI = {
+  login: (username: string, password: string) =>
+    api.post('/TaiKhoan/login', { tenDangNhap: username, matKhau: password }),
+  register: (data: any) => api.post('/TaiKhoan', data),
+};
+
 // Orders API
 export const ordersAPI = {
   getAll: () => api.get('/DonXuat'),
   getById: (id: number) => api.get(`/DonXuat/${id}`),
+  getByCustomerId: (customerId: number) => api.get(`/DonXuat/KhachHang/${customerId}`),
   create: (data: any) => api.post('/DonXuat', data),
   update: (id: number, data: any) => api.put(`/DonXuat/${id}`, data),
+  updateStatus: (id: number, trangThai: 'Đợi' | 'Đã giao') => api.put(`/DonXuat/${id}/status`, { trangThai }),
   delete: (id: number) => api.delete(`/DonXuat/${id}`),
+};
+
+export const orderDetailsAPI = {
+  getAll: () => api.get('/ChiTietDonXuat'),
+  getByOrderId: (orderId: number) => api.get(`/ChiTietDonXuat/DonXuat/${orderId}`),
+  create: (data: any) => api.post('/ChiTietDonXuat', data),
+  delete: (id: number) => api.delete(`/ChiTietDonXuat/${id}`),
+  deleteByOrderId: (orderId: number) => api.delete(`/ChiTietDonXuat/DonXuat/${orderId}`),
 };
 
 // Customers API
@@ -43,6 +60,15 @@ export const suppliersAPI = {
   create: (data: any) => api.post('/NhaCungCap', data),
   update: (id: number, data: any) => api.put(`/NhaCungCap/${id}`, data),
   delete: (id: number) => api.delete(`/NhaCungCap/${id}`),
+};
+
+// Categories API
+export const categoriesAPI = {
+  getAll: () => api.get('/LoaiSanPham'),
+  getById: (id: number) => api.get(`/LoaiSanPham/${id}`),
+  create: (data: any) => api.post('/LoaiSanPham', data),
+  update: (id: number, data: any) => api.put(`/LoaiSanPham/${id}`, data),
+  delete: (id: number) => api.delete(`/LoaiSanPham/${id}`),
 };
 
 export default api;

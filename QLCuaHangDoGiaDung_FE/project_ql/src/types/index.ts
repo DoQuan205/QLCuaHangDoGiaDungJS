@@ -14,6 +14,15 @@ export interface Order {
   maNhanVien: number;
   maKhachHang?: number;
   tongTien: number;
+  trangThai: 'Đợi' | 'Đã giao';
+}
+
+export interface OrderDetail {
+  maCTXuat: number;
+  maDonXuat: number;
+  maSanPham: number;
+  soLuong: number;
+  giaBan: number;
 }
 
 export interface Customer {
@@ -30,4 +39,20 @@ export interface Supplier {
   soDienThoai: string;
   diaChi: string;
   email: string;
+}
+
+export interface Category {
+  maLoai: number;
+  tenLoai: string;
+  moTa: string;
+}
+
+export interface User {
+  maTaiKhoan?: number;
+  tenDangNhap: string;
+  matKhau?: string;
+  maQuyen?: number;
+  trangThai?: boolean;
+  role?: 'admin' | 'staff' | 'customer';
+  fullName?: string;
 }
