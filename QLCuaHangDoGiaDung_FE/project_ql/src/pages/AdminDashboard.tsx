@@ -92,8 +92,11 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     <div className="admin-dashboard">
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <i className="fas fa-store"></i>
-          <h2>Admin Panel</h2>
+          <i className="fas fa-shopping-bag"></i>
+          <div>
+            <h2>GiaDung Mall</h2>
+            <p>Seller Centre</p>
+          </div>
         </div>
         
         <nav className="sidebar-nav">
@@ -142,10 +145,16 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       <main className="admin-content">
         <header className="admin-header">
-          <h1>Chào mừng, Admin!</h1>
+          <div>
+            <span className="admin-kicker">Kênh quản trị</span>
+            <h1>Trung tâm quản lý GiaDung Mall</h1>
+          </div>
           <div className="admin-user">
-            <img src="https://ui-avatars.com/api/?name=Admin&background=4F46E5&color=fff" alt="Admin" />
-            <span>Admin</span>
+            <div className="admin-avatar"><i className="fas fa-user-shield"></i></div>
+            <div>
+              <span>Admin</span>
+              <p>Quản trị viên</p>
+            </div>
           </div>
         </header>
 

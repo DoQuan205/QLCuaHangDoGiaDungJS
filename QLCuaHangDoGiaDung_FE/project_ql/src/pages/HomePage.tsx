@@ -25,6 +25,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const looksLikeMojibake = (value?: string) => {
     if (!value) return false;
@@ -120,6 +121,22 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     }
   };
 
+  const getCategoryName = (categoryId: number) => {
+    return categories.find(category => category.maLoai === categoryId)?.tenLoai ?? 'Chưa phân loại';
+  };
+
+  const openProductDetail = (product: Product) => {
+    setSelectedProduct(product);
+    setShowCart(false);
+    setShowOrders(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeProductDetail = () => {
+    setSelectedProduct(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.maSanPham === product.maSanPham);
     
@@ -162,6 +179,10 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
       currency: 'VND'
     }).format(amount);
   };
+
+  const getOriginalPrice = (price: number) => Math.round(price * 1.25);
+
+  const getSoldCount = (productId: number) => 15 + (productId * 7) % 86;
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -266,96 +287,235 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   return (
     <div className="homepage">
       <header className="shop-header">
+        <div className="shop-topbar">
+          <div className="container topbar-content">
+            <div className="topbar-spacer"></div>
+            <button onClick={loadCustomerOrders}><i className="fas fa-bell"></i> Thông Báo</button>
+            <button><i className="fas fa-question-circle"></i> Hỗ Trợ</button>
+            <button onClick={() => setShowAuth(true)}>Đăng Ký</button>
+            <button onClick={() => setShowAuth(true)}>Đăng Nhập</button>
+          </div>
+        </div>
+
         <div className="container">
           <div className="header-content">
-            <div className="logo">
-              <i className="fas fa-store"></i>
-              <span>Cửa Hàng Đồ Gia Dụng</span>
+            <button className="logo" onClick={closeProductDetail}>
+              <i className="fas fa-shopping-bag"></i>
+              <span>GiaDung Mall</span>
+            </button>
+            <div className="search-area">
+              <div className="search-bar">
+                <input
+                  type="text"
+                  placeholder="Shopee bao ship 0Đ - tìm đồ gia dụng ngay!"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button className="search-submit"><i className="fas fa-search"></i></button>
+              </div>
             </div>
-            <div className="search-bar">
-              <i className="fas fa-search"></i>
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="header-buttons">
-              <button className="account-button" onClick={() => setShowAuth(true)}>
-                <i className="fas fa-user"></i>
-                <span>Tài khoản</span>
-              </button>
-              <button className="account-button" onClick={loadCustomerOrders}>
-                <i className="fas fa-bell"></i>
-                <span>Đơn hàng của tôi</span>
-              </button>
-              <button className="cart-button" onClick={() => {
-                setShowCart(!showCart);
-                setShowOrders(false);
-              }}>
-                <i className="fas fa-shopping-cart"></i>
-                <span>Giỏ hàng</span>
-                {getTotalItems() > 0 && (
-                  <span className="cart-badge">{getTotalItems()}</span>
-                )}
-              </button>
-            </div>
+            <button className="cart-button" onClick={() => {
+              setShowCart(!showCart);
+              setShowOrders(false);
+            }}>
+              <i className="fas fa-shopping-cart"></i>
+              {getTotalItems() > 0 && (
+                <span className="cart-badge">{getTotalItems()}</span>
+              )}
+            </button>
           </div>
         </div>
       </header>
 
       <main className="shop-content">
         <div className="container">
-          <section className="hero-section">
-            <h1>Chào mừng đến với Cửa hàng Đồ Gia Dụng</h1>
-            <p>Chất lượng cao - Giá cả hợp lý - Giao hàng nhanh chóng</p>
-          </section>
+          {!selectedProduct && (
+            <>
+              <section className="hero-section">
+                <div>
+                  <span className="hero-kicker">Flash Sale Gia Dụng</span>
+                  <h1>Siêu sale đồ gia dụng chính hãng</h1>
+                  <p>Ưu đãi mỗi ngày - Freeship - Thanh toán an toàn</p>
+                </div>
+                <div className="hero-voucher">
+                  <strong>Voucher</strong>
+                  <span>Giảm đến 40%</span>
+                </div>
+              </section>
+            </>
+          )}
 
-          <section className="category-filter">
-            <div className="category-buttons">
-              <button
-                className={selectedCategory === null ? 'category-btn active' : 'category-btn'}
-                onClick={() => setSelectedCategory(null)}
-              >
-                <i className="fas fa-th"></i>
-                Tất cả
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category.maLoai}
-                  className={selectedCategory === category.maLoai ? 'category-btn active' : 'category-btn'}
-                  onClick={() => setSelectedCategory(category.maLoai)}
-                >
-                  <i className="fas fa-tag"></i>
-                  {category.tenLoai}
-                </button>
-              ))}
-            </div>
-          </section>
+          {selectedProduct ? (
+            <section className="product-detail-section">
+              <div className="breadcrumb">
+                <button onClick={closeProductDetail}>Shopee</button>
+                <span>&gt;</span>
+                <button onClick={closeProductDetail}>Thiết Bị Điện Gia Dụng</button>
+                <span>&gt;</span>
+                <span>{getCategoryName(selectedProduct.maLoai)}</span>
+                <span>&gt;</span>
+                <strong>{selectedProduct.tenSanPham}</strong>
+              </div>
 
-          <section className="products-section">
-            <h2>Sản phẩm của chúng tôi</h2>
-            <div className="products-grid">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
-                  <div key={product.maSanPham} className="product-card">
-                    <div className="product-image">
-                      {product.hinhAnh ? (
-                        <img src={product.hinhAnh} alt={product.tenSanPham} />
-                      ) : (
-                        <i className="fas fa-box-open"></i>
-                      )}
+              <div className="product-detail-card">
+                <div className="product-media">
+                  <div className="product-detail-image">
+                    {selectedProduct.hinhAnh ? (
+                      <img src={selectedProduct.hinhAnh} alt={selectedProduct.tenSanPham} />
+                    ) : (
+                      <i className="fas fa-box-open"></i>
+                    )}
+                  </div>
+                  <div className="product-thumbs">
+                    {[0, 1, 2, 3].map((item) => (
+                      <button key={item} className={item === 0 ? 'active' : ''}>
+                        {selectedProduct.hinhAnh ? <img src={selectedProduct.hinhAnh} alt="thumbnail" /> : <i className="fas fa-box-open"></i>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="product-share">Chia sẻ: <i className="fab fa-facebook"></i><i className="fab fa-facebook-messenger"></i><i className="fab fa-pinterest"></i></div>
+                </div>
+
+                <div className="product-detail-content">
+                  <h2>{selectedProduct.tenSanPham}</h2>
+                  <div className="rating-row">
+                    <span className="rating-score">4.9</span>
+                    <span className="stars">★★★★★</span>
+                    <span className="rating-divider"></span>
+                    <span>63 Đánh Giá</span>
+                    <span className="rating-divider"></span>
+                    <span>{getSoldCount(selectedProduct.maSanPham)} Đã Bán</span>
+                  </div>
+
+                  <div className="sale-price-box">
+                    <div className="flash-sale"><i className="fas fa-bolt"></i> FLASH SALE <span>KẾT THÚC TRONG 00 : 55 : 10</span></div>
+                    <div className="price-line">
+                      <span className="product-detail-price">{formatCurrency(selectedProduct.giaBan)}</span>
+                      <span className="original-price">{formatCurrency(getOriginalPrice(selectedProduct.giaBan))}</span>
+                      <span className="discount-badge">-20%</span>
                     </div>
-                    <div className="product-details">
-                      <h3>{product.tenSanPham}</h3>
-                      <p className="product-stock">
-                        Còn lại: {product.soLuong} sản phẩm
-                      </p>
-                      <div className="product-footer">
-                        <span className="product-price">
-                          {formatCurrency(product.giaBan)}
-                        </span>
+                  </div>
+
+                  <div className="detail-option-row"><span>Vận Chuyển</span><strong><i className="fas fa-truck"></i> Miễn phí vận chuyển</strong></div>
+                  <div className="detail-option-row"><span>An Tâm Mua Sắm</span><strong><i className="fas fa-shield-alt"></i> Trả hàng miễn phí 15 ngày</strong></div>
+                  <div className="detail-option-row"><span>Loại</span><div className="variant-list"><button>{getCategoryName(selectedProduct.maLoai)}</button><button>Chính hãng</button><button>Bảo hành</button></div></div>
+                  <div className="detail-option-row"><span>Số Lượng</span><div className="quantity-preview"><button>-</button><span>1</span><button>+</button><em>{selectedProduct.soLuong} sản phẩm có sẵn</em></div></div>
+
+                  <div className="detail-actions">
+                    <button
+                      className="btn-detail-add-cart"
+                      onClick={() => addToCart(selectedProduct)}
+                      disabled={selectedProduct.soLuong === 0}
+                    >
+                      <i className="fas fa-cart-plus"></i>
+                      Thêm Vào Giỏ Hàng
+                    </button>
+                    <button
+                      className="btn-buy-now"
+                      onClick={() => addToCart(selectedProduct)}
+                      disabled={selectedProduct.soLuong === 0}
+                    >
+                      Mua Ngay
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="shop-info-card">
+                <div className="shop-avatar"><i className="fas fa-store"></i></div>
+                <div><strong>GIADUNG SHOPS V1</strong><p>Online 5 Giờ Trước</p></div>
+                <button>Chat Ngay</button>
+                <button>Xem Shop</button>
+                <div className="shop-stats"><span>Đánh Giá <strong>1.8k</strong></span><span>Sản Phẩm <strong>{products.length}</strong></span><span>Tỉ Lệ Phản Hồi <strong>100%</strong></span></div>
+              </div>
+
+              <div className="product-spec-card">
+                <h3>CHI TIẾT SẢN PHẨM</h3>
+                <div className="spec-row"><span>Danh Mục</span><p>Shopee &gt; Thiết Bị Điện Gia Dụng &gt; {getCategoryName(selectedProduct.maLoai)}</p></div>
+                <div className="spec-row"><span>Thương hiệu</span><p>GiaDung Mall</p></div>
+                <div className="spec-row"><span>Kho hàng</span><p>{selectedProduct.soLuong}</p></div>
+                <div className="spec-row"><span>Xuất xứ</span><p>Việt Nam</p></div>
+                <div className="spec-row"><span>Bảo hành</span><p>12 tháng</p></div>
+                <div className="spec-row"><span>Mô tả</span><p>{selectedProduct.moTa || 'Sản phẩm hiện chưa có mô tả chi tiết.'}</p></div>
+              </div>
+            </section>
+          ) : (
+            <div className="market-layout">
+              <aside className="filter-sidebar">
+                <h3><i className="fas fa-list"></i> Tất Cả Danh Mục</h3>
+                <button
+                  className={selectedCategory === null ? 'filter-category active' : 'filter-category'}
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  Tất cả sản phẩm
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.maLoai}
+                    className={selectedCategory === category.maLoai ? 'filter-category active' : 'filter-category'}
+                    onClick={() => {
+                      setSelectedCategory(category.maLoai);
+                      setSelectedProduct(null);
+                    }}
+                  >
+                    {category.tenLoai}
+                  </button>
+                ))}
+
+                <div className="filter-block">
+                  <h4><i className="fas fa-filter"></i> Bộ Lọc Tìm Kiếm</h4>
+                  <label><input type="checkbox" /> Hà Nội</label>
+                  <label><input type="checkbox" /> TP. Hồ Chí Minh</label>
+                  <label><input type="checkbox" /> Hàng mới</label>
+                  <label><input type="checkbox" /> Freeship</label>
+                </div>
+
+                <div className="filter-block">
+                  <h4>Đánh Giá</h4>
+                  <p className="filter-stars">★★★★★ trở lên</p>
+                  <p className="filter-stars">★★★★☆ trở lên</p>
+                </div>
+              </aside>
+
+              <section className="products-section">
+                <div className="sort-bar">
+                  <span>Sắp xếp theo</span>
+                  <button className="active">Phổ biến</button>
+                  <button>Mới nhất</button>
+                  <button>Bán chạy</button>
+                  <select defaultValue="">
+                    <option value="" disabled>Giá</option>
+                    <option>Giá thấp đến cao</option>
+                    <option>Giá cao đến thấp</option>
+                  </select>
+                </div>
+                <div className="products-grid">
+                  {filteredProducts.length > 0 ? (
+                    filteredProducts.map((product) => (
+                      <div key={product.maSanPham} className="product-card">
+                        <span className="discount-corner">-20%</span>
+                        <button className="product-card-view" onClick={() => openProductDetail(product)}>
+                          <div className="product-image">
+                            {product.hinhAnh ? (
+                              <img src={product.hinhAnh} alt={product.tenSanPham} />
+                            ) : (
+                              <i className="fas fa-box-open"></i>
+                            )}
+                          </div>
+                          <div className="product-details">
+                            <h3>{product.tenSanPham}</h3>
+                            <div className="mall-badge">Mall</div>
+                          </div>
+                        </button>
+                        <div className="product-footer">
+                          <span className="product-price">
+                            {formatCurrency(product.giaBan)}
+                          </span>
+                          <span className="sold-count">Đã bán {getSoldCount(product.maSanPham)}</span>
+                        </div>
                         <button
                           className="btn-add-cart"
                           onClick={() => addToCart(product)}
@@ -365,14 +525,14 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
                           Thêm
                         </button>
                       </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="no-products">Không tìm thấy sản phẩm nào</p>
-              )}
+                    ))
+                  ) : (
+                    <p className="no-products">Không tìm thấy sản phẩm nào</p>
+                  )}
+                </div>
+              </section>
             </div>
-          </section>
+          )}
         </div>
       </main>
 

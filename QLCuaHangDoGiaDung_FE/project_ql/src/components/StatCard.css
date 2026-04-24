@@ -1,59 +1,75 @@
 .stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 1rem;
+  position: relative;
+  overflow: hidden;
   display: flex;
-  gap: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  gap: 1rem;
+  padding: 1.15rem;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 70px;
+  height: 70px;
+  background: rgba(238,77,45,0.08);
+  border-radius: 0 0 0 100%;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+  border-color: #ffd7c8;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
 }
 
 .stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 1rem;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  border-radius: 4px;
+  font-size: 1.45rem;
   color: white;
 }
 
-.stat-primary .stat-icon { background: #4F46E5; }
+.stat-primary .stat-icon { background: #ee4d2d; }
 .stat-success .stat-icon { background: #10B981; }
 .stat-warning .stat-icon { background: #F59E0B; }
-.stat-danger .stat-icon { background: #EF4444; }
+.stat-danger .stat-icon { background: #d73211; }
 
 .stat-content h3 {
-  font-size: 0.9rem;
-  color: #6B7280;
+  margin-bottom: 0.45rem;
+  color: #777;
+  font-size: 0.86rem;
   font-weight: 500;
-  margin-bottom: 0.5rem;
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1F2937;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
+  color: #222;
+  font-size: 1.65rem;
+  font-weight: 800;
 }
 
 .stat-change {
-  font-size: 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  font-size: 0.8rem;
 }
 
 .stat-change.positive {
-  color: #10B981;
+  color: #0f8a4b;
 }
 
 .stat-change.negative {
-  color: #EF4444;
+  color: #cf1322;
 }

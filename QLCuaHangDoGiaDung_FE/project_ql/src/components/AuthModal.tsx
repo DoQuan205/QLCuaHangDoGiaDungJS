@@ -112,16 +112,31 @@ function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     <>
       <div className="auth-overlay" onClick={onClose}></div>
       <div className="auth-modal">
-        <button className="auth-close" onClick={onClose}>
-          <i className="fas fa-times"></i>
-        </button>
-
-        <div className="auth-header">
-          <h2>{isLogin ? 'Đăng nhập' : 'Đăng ký'}</h2>
-          <p>{isLogin ? 'Chào mừng bạn quay trở lại!' : 'Tạo tài khoản mới'}</p>
+        <div className="auth-brand-panel">
+          <div className="auth-brand-logo">
+            <i className="fas fa-shopping-bag"></i>
+            <span>GiaDung Mall</span>
+          </div>
+          <h3>Mua sắm đồ gia dụng dễ dàng hơn</h3>
+          <p>Đăng nhập để theo dõi đơn hàng, nhận ưu đãi và quản lý giỏ hàng của bạn.</p>
+          <div className="auth-benefits">
+            <span><i className="fas fa-shipping-fast"></i> Freeship</span>
+            <span><i className="fas fa-shield-alt"></i> An toàn</span>
+            <span><i className="fas fa-tags"></i> Giá tốt</span>
+          </div>
         </div>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="auth-form-panel">
+          <button className="auth-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+
+          <div className="auth-header">
+            <h2>{isLogin ? 'Đăng nhập' : 'Đăng ký'}</h2>
+            <p>{isLogin ? 'Chào mừng bạn quay trở lại!' : 'Tạo tài khoản mới'}</p>
+          </div>
+
+          <form className="auth-form" onSubmit={handleSubmit}>
           {error && (
             <div className="error-message">
               <i className="fas fa-exclamation-circle"></i>
@@ -219,20 +234,21 @@ function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
           <button type="submit" className="btn-submit" disabled={loading}>
             {loading ? 'Đang xử lý...' : (isLogin ? 'Đăng nhập' : 'Đăng ký')}
           </button>
-        </form>
+          </form>
 
-        <div className="auth-switch">
-          {isLogin ? (
-            <p>
-              Chưa có tài khoản?{' '}
-              <button type="button" onClick={() => switchMode(false)}>Đăng ký ngay</button>
-            </p>
-          ) : (
-            <p>
-              Đã có tài khoản?{' '}
-              <button type="button" onClick={() => switchMode(true)}>Đăng nhập</button>
-            </p>
-          )}
+          <div className="auth-switch">
+            {isLogin ? (
+              <p>
+                Chưa có tài khoản?{' '}
+                <button type="button" onClick={() => switchMode(false)}>Đăng ký ngay</button>
+              </p>
+            ) : (
+              <p>
+                Đã có tài khoản?{' '}
+                <button type="button" onClick={() => switchMode(true)}>Đăng nhập</button>
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </>

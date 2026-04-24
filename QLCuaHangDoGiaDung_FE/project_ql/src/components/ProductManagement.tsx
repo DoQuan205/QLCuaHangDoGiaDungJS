@@ -50,10 +50,12 @@ function ProductManagement() {
     }
   };
 
+  // Tìm kiếm sản phẩm
   const getCategoryName = (categoryId: number) => {
     return categories.find(category => category.maLoai === categoryId)?.tenLoai || `Loại ${categoryId}`;
   };
 
+  // Thêm sản phẩm
   const handleAdd = () => {
     setModalMode('add');
     setSelectedProduct(null);
@@ -70,6 +72,7 @@ function ProductManagement() {
     setShowModal(true);
   };
 
+  // Sửa thông tin sản phẩm
   const handleEdit = (product: Product) => {
     setModalMode('edit');
     setSelectedProduct(product);
@@ -86,6 +89,7 @@ function ProductManagement() {
     setShowModal(true);
   };
 
+  // Xem thông tin sản phẩm
   const handleView = (product: Product) => {
     setModalMode('view');
     setSelectedProduct(product);
@@ -101,6 +105,7 @@ function ProductManagement() {
     setShowModal(true);
   };
 
+  //Xóa thông tin sản phẩm
   const handleDelete = async (id: number, name: string) => {
     if (window.confirm(`⚠️ Bạn có chắc muốn xóa sản phẩm "${name}"?\n\nHành động này không thể hoàn tác!`)) {
       try {
