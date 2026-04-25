@@ -12,6 +12,8 @@ interface HomePageProps {
   onLoginSuccess: (user: User) => void;
 }
 
+type SortOption = 'popular' | 'newest' | 'bestSelling' | 'priceAsc' | 'priceDesc';
+
 function HomePage({ onLoginSuccess }: HomePageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -26,6 +28,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>('popular');
 
   const looksLikeMojibake = (value?: string) => {
     if (!value) return false;
@@ -184,6 +187,14 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
 
   const getSoldCount = (productId: number) => 15 + (productId * 7) % 86;
 
+  const getSortButtonClass = (option: SortOption) => {
+    return sortOption === option ? 'active' : '';
+  };
+
+  const getPriceSelectValue = () => {
+    return sortOption === 'priceAsc' || sortOption === 'priceDesc' ? sortOption : '';
+  };
+
   const handleCheckout = async () => {
     if (cart.length === 0) {
       alert('Giỏ hàng đang trống!');
@@ -275,6 +286,22 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     return matchesSearch && matchesCategory;
   });
 
+  const sortedProducts = [...filteredProducts].sort((firstProduct, secondProduct) => {
+    switch (sortOption) {
+      case 'newest':
+        return secondProduct.maSanPham - firstProduct.maSanPham;
+      case 'bestSelling':
+        return getSoldCount(secondProduct.maSanPham) - getSoldCount(firstProduct.maSanPham);
+      case 'priceAsc':
+        return firstProduct.giaBan - secondProduct.giaBan;
+      case 'priceDesc':
+        return secondProduct.giaBan - firstProduct.giaBan;
+      case 'popular':
+      default:
+        return firstProduct.maSanPham - secondProduct.maSanPham;
+    }
+  });
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -307,7 +334,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
               <div className="search-bar">
                 <input
                   type="text"
-                  placeholder="Shopee bao ship 0Đ - tìm đồ gia dụng ngay!"
+                  placeholder="ShopMall bao ship 0Đ - tìm đồ gia dụng ngay!"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -333,13 +360,9 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
             <>
               <section className="hero-section">
                 <div>
-                  <span className="hero-kicker">Flash Sale Gia Dụng</span>
+                  <span className="hero-kicker">Flash Sale Đồ Gia Dụng</span>
                   <h1>Siêu sale đồ gia dụng chính hãng</h1>
                   <p>Ưu đãi mỗi ngày - Freeship - Thanh toán an toàn</p>
-                </div>
-                <div className="hero-voucher">
-                  <strong>Voucher</strong>
-                  <span>Giảm đến 40%</span>
                 </div>
               </section>
             </>
@@ -483,18 +506,36 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
               <section className="products-section">
                 <div className="sort-bar">
                   <span>Sắp xếp theo</span>
-                  <button className="active">Phổ biến</button>
-                  <button>Mới nhất</button>
-                  <button>Bán chạy</button>
-                  <select defaultValue="">
+                  <button
+                    className={getSortButtonClass('popular')}
+                    onClick={() => setSortOption('popular')}
+                  >
+                    Phổ biến
+                  </button>
+                  <button
+                    className={getSortButtonClass('newest')}
+                    onClick={() => setSortOption('newest')}
+                  >
+                    Mới nhất
+                  </button>
+                  <button
+                    className={getSortButtonClass('bestSelling')}
+                    onClick={() => setSortOption('bestSelling')}
+                  >
+                    Bán chạy
+                  </button>
+                  <select
+                    value={getPriceSelectValue()}
+                    onChange={(event) => setSortOption(event.target.value as SortOption)}
+                  >
                     <option value="" disabled>Giá</option>
-                    <option>Giá thấp đến cao</option>
-                    <option>Giá cao đến thấp</option>
+                    <option value="priceAsc">Giá thấp đến cao</option>
+                    <option value="priceDesc">Giá cao đến thấp</option>
                   </select>
                 </div>
                 <div className="products-grid">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product) => (
+                  {sortedProducts.length > 0 ? (
+                    sortedProducts.map((product) => (
                       <div key={product.maSanPham} className="product-card">
                         <span className="discount-corner">-20%</span>
                         <button className="product-card-view" onClick={() => openProductDetail(product)}>

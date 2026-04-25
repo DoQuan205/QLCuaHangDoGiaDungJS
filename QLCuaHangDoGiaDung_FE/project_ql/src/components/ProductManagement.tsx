@@ -120,6 +120,7 @@ function ProductManagement() {
     }
   };
 
+  //kiểm tra điều kiện
   const validateForm = () => {
     const errors: {[key: string]: string} = {};
 
