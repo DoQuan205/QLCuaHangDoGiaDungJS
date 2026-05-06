@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { authAPI } from '../services/api';
 import type { User } from '../types';
 import './AuthModal.css';
@@ -7,10 +7,11 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: (user: User) => void;
+  defaultMode?: 'login' | 'register';
 }
 
-function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+function AuthModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }: AuthModalProps) {
+  const [isLogin, setIsLogin] = useState(defaultMode === 'login');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,14 @@ function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     phone: '',
     fullName: ''
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(defaultMode === 'login');
+      setError('');
+      setSuccess('');
+    }
+  }, [isOpen, defaultMode]);
 
   if (!isOpen) return null;
 
@@ -50,14 +59,22 @@ function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
 
     try {
       if (isLogin) {
-        const response = await authAPI.login(formData.username, formData.password);
+        const response = await authAPI.login(formData.username.trim(), formData.password);
         const apiUser = response.data;
 
         const user: User = {
-          ...apiUser,
-          tenDangNhap: apiUser.tenDangNhap,
-          role: mapRole(apiUser.maQuyen),
-          fullName: apiUser.tenDangNhap
+          maTaiKhoan: apiUser.maTaiKhoan ?? apiUser.MaTaiKhoan,
+          tenDangNhap: apiUser.tenDangNhap ?? apiUser.TenDangNhap,
+          matKhau: apiUser.matKhau ?? apiUser.MatKhau,
+          maQuyen: apiUser.maQuyen ?? apiUser.MaQuyen,
+          trangThai: apiUser.trangThai ?? apiUser.TrangThai,
+          role: mapRole(apiUser.maQuyen ?? apiUser.MaQuyen),
+          fullName: apiUser.tenKhachHang || apiUser.TenKhachHang || apiUser.tenDangNhap || apiUser.TenDangNhap,
+          maKhachHang: apiUser.maKhachHang ?? apiUser.MaKhachHang,
+          tenKhachHang: apiUser.tenKhachHang ?? apiUser.TenKhachHang,
+          soDienThoai: apiUser.soDienThoai ?? apiUser.SoDienThoai,
+          diaChi: apiUser.diaChi ?? apiUser.DiaChi,
+          email: apiUser.email ?? apiUser.Email,
         };
 
         localStorage.setItem('user', JSON.stringify(user));
@@ -70,10 +87,14 @@ function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
         }
 
         await authAPI.register({
-          tenDangNhap: formData.username,
+          tenDangNhap: formData.username.trim(),
           matKhau: formData.password,
-          maQuyen: 2,
-          trangThai: true
+          maQuyen: 3,
+          trangThai: true,
+          tenKhachHang: formData.fullName,
+          soDienThoai: formData.phone,
+          email: formData.email,
+          diaChi: ''
         });
 
         setSuccess('Đăng ký thành công. Bạn có thể đăng nhập ngay bây giờ.');

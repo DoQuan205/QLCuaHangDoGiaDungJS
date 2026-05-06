@@ -11,10 +11,10 @@ export interface Product {
 export interface Order {
   maDonXuat: number;
   ngayXuat: string;
-  maNhanVien: number;
+  maNhanVien?: number | null;
   maKhachHang?: number;
   tongTien: number;
-  trangThai: 'Đợi' | 'Đã giao';
+  trangThai: 'Đợi' | 'Đã giao' | 'Đã hủy';
 }
 
 export interface OrderDetail {
@@ -31,6 +31,7 @@ export interface Customer {
   soDienThoai: string;
   diaChi: string;
   email: string;
+  maTaiKhoan?: number;
 }
 
 export interface Supplier {
@@ -55,4 +56,9 @@ export interface User {
   trangThai?: boolean;
   role?: 'admin' | 'staff' | 'customer';
   fullName?: string;
+  maKhachHang?: number;
+  tenKhachHang?: string;
+  soDienThoai?: string;
+  diaChi?: string;
+  email?: string;
 }

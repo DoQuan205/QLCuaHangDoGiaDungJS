@@ -20,7 +20,8 @@ IF NOT EXISTS (
 )
 BEGIN
     ALTER TABLE DonXuat
-    ADD CONSTRAINT CK_DonXuat_TrangThai CHECK (TrangThai IN (N'Đợi', N'Đã giao'));
+        ADD CONSTRAINT CK_DonXuat_TrangThai CHECK (TrangThai IN (N'Đợi', N'Đã giao', N'Đã hủy'))
+;
 END
 GO
 

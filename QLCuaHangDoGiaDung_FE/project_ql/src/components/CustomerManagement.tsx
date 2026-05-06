@@ -58,7 +58,8 @@ function CustomerManagement() {
     tenKhachHang: normalizeText(formData.tenKhachHang),
     soDienThoai: formData.soDienThoai.trim(),
     diaChi: normalizeText(formData.diaChi),
-    email: formData.email.trim().toLowerCase()
+    email: formData.email.trim().toLowerCase(),
+    maTaiKhoan: selectedCustomer?.maTaiKhoan ?? null
   });
 
   const validateForm = () => {

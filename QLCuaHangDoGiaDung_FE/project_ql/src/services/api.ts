@@ -31,8 +31,10 @@ export const ordersAPI = {
   getById: (id: number) => api.get(`/DonXuat/${id}`),
   getByCustomerId: (customerId: number) => api.get(`/DonXuat/KhachHang/${customerId}`),
   create: (data: any) => api.post('/DonXuat', data),
+  checkout: (data: any) => api.post('/DonXuat/checkout', data),
   update: (id: number, data: any) => api.put(`/DonXuat/${id}`, data),
-  updateStatus: (id: number, trangThai: 'Đợi' | 'Đã giao') => api.put(`/DonXuat/${id}/status`, { trangThai }),
+  updateStatus: (id: number, trangThai: 'Đợi' | 'Đã giao' | 'Đã hủy') => api.put(`/DonXuat/${id}/status`, { trangThai }),
+  cancel: (id: number) => api.put(`/DonXuat/${id}/cancel`),
   delete: (id: number) => api.delete(`/DonXuat/${id}`),
 };
 
@@ -48,6 +50,7 @@ export const orderDetailsAPI = {
 export const customersAPI = {
   getAll: () => api.get('/KhachHang'),
   getById: (id: number) => api.get(`/KhachHang/${id}`),
+  getByAccountId: (accountId: number) => api.get(`/KhachHang/TaiKhoan/${accountId}`),
   create: (data: any) => api.post('/KhachHang', data),
   update: (id: number, data: any) => api.put(`/KhachHang/${id}`, data),
   delete: (id: number) => api.delete(`/KhachHang/${id}`),

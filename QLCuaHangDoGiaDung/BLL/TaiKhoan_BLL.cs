@@ -1,4 +1,4 @@
-﻿using DAL;
+using DAL;
 using QLCuaHangDoGiaDung.Models;
 
 namespace BLL
@@ -19,10 +19,20 @@ namespace BLL
 
         public bool Insert(TaiKhoan tk)
         {
-            if (string.IsNullOrEmpty(tk.TenDangNhap) || string.IsNullOrEmpty(tk.MatKhau))
+            if (string.IsNullOrWhiteSpace(tk.TenDangNhap) || string.IsNullOrWhiteSpace(tk.MatKhau))
                 return false;
 
+            tk.TenDangNhap = tk.TenDangNhap.Trim();
             return dal.Insert(tk);
+        }
+
+        public int InsertAndGetId(TaiKhoan tk)
+        {
+            if (string.IsNullOrWhiteSpace(tk.TenDangNhap) || string.IsNullOrWhiteSpace(tk.MatKhau))
+                return 0;
+
+            tk.TenDangNhap = tk.TenDangNhap.Trim();
+            return dal.InsertAndGetId(tk);
         }
 
         public bool Update(TaiKhoan tk)

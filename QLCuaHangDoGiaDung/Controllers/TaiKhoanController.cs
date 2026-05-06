@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using BLL;
 using QLCuaHangDoGiaDung.Models;
 
@@ -9,10 +9,12 @@ namespace API.Controllers
     public class TaiKhoanController : ControllerBase
     {
         private readonly TaiKhoan_BLL bll;
+        private readonly KhachHang_BLL khachHangBll;
 
-        public TaiKhoanController(TaiKhoan_BLL _bll)
+        public TaiKhoanController(TaiKhoan_BLL _bll, KhachHang_BLL _khachHangBll)
         {
             bll = _bll;
+            khachHangBll = _khachHangBll;
         }
 
         [HttpGet]
@@ -24,10 +26,31 @@ namespace API.Controllers
         [HttpPost]
         public IActionResult Create(TaiKhoan tk)
         {
-            if (!bll.Insert(tk))
+            if (tk.MaQuyen == 0)
+                tk.MaQuyen = 3;
+
+            tk.TrangThai = true;
+
+            var maTaiKhoan = bll.InsertAndGetId(tk);
+            if (maTaiKhoan <= 0)
                 return BadRequest("Dữ liệu không hợp lệ");
 
-            return Ok("Thêm tài khoản thành công");
+            if (tk.MaQuyen == 3)
+            {
+                var khachHang = new KhachHang
+                {
+                    TenKhachHang = string.IsNullOrWhiteSpace(tk.TenKhachHang) ? tk.TenDangNhap : tk.TenKhachHang,
+                    SoDienThoai = tk.SoDienThoai ?? string.Empty,
+                    DiaChi = tk.DiaChi ?? string.Empty,
+                    Email = tk.Email ?? string.Empty,
+                    MaTaiKhoan = maTaiKhoan
+                };
+
+                if (!khachHangBll.Insert(khachHang))
+                    return BadRequest("Tạo tài khoản thành công nhưng không tạo được thông tin khách hàng");
+            }
+
+            return Ok(new { message = "Thêm tài khoản thành công", maTaiKhoan });
         }
 
         [HttpPost("login")]

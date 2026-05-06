@@ -18,6 +18,31 @@ namespace DAL
             return new SqlConnection(_connStr);
         }
 
+        private bool TryReadDonXuat(SqlDataReader reader, out DonXuat donXuat)
+        {
+            donXuat = null;
+
+            if (reader["MaDonXuat"] == DBNull.Value)
+                return false;
+
+            var maDonXuat = Convert.ToInt32(reader["MaDonXuat"]);
+            var ngayXuat = reader["NgayXuat"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["NgayXuat"]);
+            var tongTien = reader["TongTien"] == DBNull.Value ? 0d : Convert.ToDouble(reader["TongTien"]);
+            var trangThai = reader["TrangThai"] == DBNull.Value ? "Đợi" : reader["TrangThai"].ToString() ?? "Đợi";
+
+            donXuat = new DonXuat
+            {
+                MaDonXuat = maDonXuat,
+                NgayXuat = ngayXuat,
+                MaNhanVien = reader["MaNhanVien"] == DBNull.Value ? null : Convert.ToInt32(reader["MaNhanVien"]),
+                MaKhachHang = reader["MaKhachHang"] == DBNull.Value ? null : Convert.ToInt32(reader["MaKhachHang"]),
+                TongTien = tongTien,
+                TrangThai = trangThai
+            };
+
+            return true;
+        }
+
         public List<DonXuat> GetAll()
         {
             List<DonXuat> ds = new List<DonXuat>();
@@ -31,15 +56,8 @@ namespace DAL
 
                 while (reader.Read())
                 {
-                    ds.Add(new DonXuat
-                    {
-                        MaDonXuat = (int)reader["MaDonXuat"],
-                        NgayXuat = (DateTime)reader["NgayXuat"],
-                        MaNhanVien = (int)reader["MaNhanVien"],
-                        MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
-                        TongTien = Convert.ToDouble(reader["TongTien"]),
-                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
-                    });
+                    if (TryReadDonXuat(reader, out var donXuat))
+                        ds.Add(donXuat);
                 }
             }
             return ds;
@@ -57,7 +75,7 @@ namespace DAL
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@NgayXuat", dx.NgayXuat);
-                cmd.Parameters.AddWithValue("@MaNV", dx.MaNhanVien);
+                cmd.Parameters.AddWithValue("@MaNV", (object?)dx.MaNhanVien ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@MaKH", (object)dx.MaKhachHang ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@TongTien", dx.TongTien);
                 cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrWhiteSpace(dx.TrangThai) ? "Đợi" : dx.TrangThai);
@@ -83,7 +101,7 @@ namespace DAL
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@Ma", dx.MaDonXuat);
                 cmd.Parameters.AddWithValue("@NgayXuat", dx.NgayXuat);
-                cmd.Parameters.AddWithValue("@MaNV", dx.MaNhanVien);
+                cmd.Parameters.AddWithValue("@MaNV", (object?)dx.MaNhanVien ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@MaKH", (object)dx.MaKhachHang ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@TongTien", dx.TongTien);
                 cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrWhiteSpace(dx.TrangThai) ? "Đợi" : dx.TrangThai);
@@ -119,17 +137,9 @@ namespace DAL
 
                 SqlDataReader reader = cmd.ExecuteReader();
 
-                if (reader.Read())
+                if (reader.Read() && TryReadDonXuat(reader, out var donXuat))
                 {
-                    dx = new DonXuat
-                    {
-                        MaDonXuat = (int)reader["MaDonXuat"],
-                        NgayXuat = (DateTime)reader["NgayXuat"],
-                        MaNhanVien = (int)reader["MaNhanVien"],
-                        MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
-                        TongTien = Convert.ToDouble(reader["TongTien"]),
-                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
-                    };
+                    dx = donXuat;
                 }
             }
 
@@ -150,15 +160,8 @@ namespace DAL
 
                 while (reader.Read())
                 {
-                    ds.Add(new DonXuat
-                    {
-                        MaDonXuat = (int)reader["MaDonXuat"],
-                        NgayXuat = (DateTime)reader["NgayXuat"],
-                        MaNhanVien = (int)reader["MaNhanVien"],
-                        MaKhachHang = reader["MaKhachHang"] != DBNull.Value ? (int?)reader["MaKhachHang"] : null,
-                        TongTien = Convert.ToDouble(reader["TongTien"]),
-                        TrangThai = reader["TrangThai"].ToString() ?? "Đợi"
-                    });
+                    if (TryReadDonXuat(reader, out var donXuat))
+                        ds.Add(donXuat);
                 }
             }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using QLCuaHangDoGiaDung.Models;
 
@@ -48,20 +48,26 @@ namespace DAL
         // 🔹 Thêm
         public bool Insert(TaiKhoan tk)
         {
+            return InsertAndGetId(tk) > 0;
+        }
+
+        public int InsertAndGetId(TaiKhoan tk)
+        {
             using (SqlConnection conn = GetConn())
             {
                 conn.Open();
                 string sql = @"INSERT INTO TaiKhoan
                 (TenDangNhap, MatKhau, MaQuyen, TrangThai)
-                VALUES (@User, @Pass, @Quyen, @TrangThai)";
+                OUTPUT INSERTED.MaTaiKhoan
+                VALUES (LTRIM(RTRIM(@User)), @Pass, @Quyen, @TrangThai)";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@User", tk.TenDangNhap);
+                cmd.Parameters.AddWithValue("@User", tk.TenDangNhap.Trim());
                 cmd.Parameters.AddWithValue("@Pass", tk.MatKhau);
                 cmd.Parameters.AddWithValue("@Quyen", tk.MaQuyen);
                 cmd.Parameters.AddWithValue("@TrangThai", tk.TrangThai);
 
-                return cmd.ExecuteNonQuery() > 0;
+                return (int)cmd.ExecuteScalar();
             }
         }
 
@@ -142,11 +148,20 @@ namespace DAL
             using (SqlConnection conn = GetConn())
             {
                 conn.Open();
-                string sql = @"SELECT * FROM TaiKhoan 
-                               WHERE TenDangNhap=@User AND MatKhau=@Pass AND TrangThai=1";
+                string sql = @"SELECT TOP 1 tk.MaTaiKhoan, tk.TenDangNhap, tk.MaQuyen, tk.TrangThai,
+                                      kh.MaKhachHang, kh.TenKhachHang, kh.SoDienThoai, kh.DiaChi, kh.Email
+                               FROM TaiKhoan tk
+                               LEFT JOIN KhachHang kh ON kh.MaTaiKhoan = tk.MaTaiKhoan
+                               LEFT JOIN NhanVien nv ON nv.MaTaiKhoan = tk.MaTaiKhoan
+                               WHERE (LTRIM(RTRIM(tk.TenDangNhap)) = LTRIM(RTRIM(@User))
+                                   OR LTRIM(RTRIM(ISNULL(kh.Email, ''))) = LTRIM(RTRIM(@User))
+                                   OR LTRIM(RTRIM(ISNULL(kh.TenKhachHang, ''))) = LTRIM(RTRIM(@User))
+                                   OR LTRIM(RTRIM(ISNULL(nv.TenNhanVien, ''))) = LTRIM(RTRIM(@User)))
+                                 AND tk.MatKhau=@Pass AND tk.TrangThai=1
+                               ORDER BY CASE WHEN kh.MaKhachHang IS NOT NULL THEN 0 ELSE 1 END, tk.MaTaiKhoan DESC";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@User", user);
+                cmd.Parameters.AddWithValue("@User", user.Trim());
                 cmd.Parameters.AddWithValue("@Pass", pass);
 
                 SqlDataReader reader = cmd.ExecuteReader();
@@ -158,7 +173,12 @@ namespace DAL
                         MaTaiKhoan = (int)reader["MaTaiKhoan"],
                         TenDangNhap = reader["TenDangNhap"].ToString(),
                         MaQuyen = (int)reader["MaQuyen"],
-                        TrangThai = (bool)reader["TrangThai"]
+                        TrangThai = (bool)reader["TrangThai"],
+                        MaKhachHang = reader["MaKhachHang"] == DBNull.Value ? null : (int?)reader["MaKhachHang"],
+                        TenKhachHang = reader["TenKhachHang"] == DBNull.Value ? null : reader["TenKhachHang"].ToString(),
+                        SoDienThoai = reader["SoDienThoai"] == DBNull.Value ? null : reader["SoDienThoai"].ToString(),
+                        DiaChi = reader["DiaChi"] == DBNull.Value ? null : reader["DiaChi"].ToString(),
+                        Email = reader["Email"] == DBNull.Value ? null : reader["Email"].ToString()
                     };
                 }
             }

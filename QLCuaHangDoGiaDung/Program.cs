@@ -1,5 +1,6 @@
-﻿using BLL;
+using BLL;
 using DAL;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,6 +70,27 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var connStr = config.GetConnectionString("DefaultConnection");
+
+    if (!string.IsNullOrWhiteSpace(connStr))
+    {
+        using var conn = new SqlConnection(connStr);
+        conn.Open();
+
+        var checkRoleCmd = new SqlCommand("SELECT COUNT(*) FROM PhanQuyen WHERE MaQuyen = 3", conn);
+        var hasCustomerRole = (int)checkRoleCmd.ExecuteScalar() > 0;
+
+        if (!hasCustomerRole)
+        {
+            var insertRoleCmd = new SqlCommand("INSERT INTO PhanQuyen (TenQuyen, MoTa) VALUES (N'Khách hàng', N'Tài khoản mua hàng')", conn);
+            insertRoleCmd.ExecuteNonQuery();
+        }
+    }
+}
 
 // 🔹 Middleware pipeline
 if (app.Environment.IsDevelopment())

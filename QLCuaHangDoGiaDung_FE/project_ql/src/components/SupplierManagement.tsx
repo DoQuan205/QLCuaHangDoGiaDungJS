@@ -61,6 +61,7 @@ function SupplierManagement() {
     email: formData.email.trim().toLowerCase()
   });
 
+  //Kiểm tra các trường hợp
   const validateForm = () => {
     const payload = getSupplierPayload();
     const errors: SupplierFormErrors = {};
@@ -113,12 +114,14 @@ function SupplierManagement() {
     return Object.keys(errors).length === 0;
   };
 
+  //Chức năng thêm
   const handleAdd = () => {
     resetForm();
     setModalMode('add');
     setShowModal(true);
   };
 
+  //fillFrom dùng để chuyển dữ liệu vào from khi sửa
   const fillForm = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setFormData({
@@ -130,12 +133,14 @@ function SupplierManagement() {
     setFormErrors({});
   };
 
+  //Chức năng sửa
   const handleEdit = (supplier: Supplier) => {
     setModalMode('edit');
     fillForm(supplier);
     setShowModal(true);
   };
 
+  //Chức năng xem thông tin
   const handleView = async (supplier: Supplier) => {
     try {
       setModalMode('view');
@@ -149,6 +154,7 @@ function SupplierManagement() {
     }
   };
 
+  //Chức năng xóa
   const handleDelete = async (id: number, name: string) => {
     if (!window.confirm(`Bạn có chắc muốn xóa nhà cung cấp "${name}"?`)) return;
 
@@ -162,6 +168,7 @@ function SupplierManagement() {
     }
   };
 
+  //Xử lý dữ liệu sau khi thêm và sửa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (modalMode === 'view') return;
@@ -192,6 +199,7 @@ function SupplierManagement() {
     }
   };
 
+  //Xử lý sau khi nhập dữ liệu
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -207,6 +215,7 @@ function SupplierManagement() {
     }
   };
 
+  //Lọc danh sách theo từ( chức năng tìm kiếm )
   const filteredSuppliers = suppliers.filter((supplier) => {
     const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return true;

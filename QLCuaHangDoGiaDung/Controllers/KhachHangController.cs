@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using BLL;
 using QLCuaHangDoGiaDung.Models;
 
@@ -25,6 +25,16 @@ namespace API.Controllers
         public IActionResult GetById(int id)
         {
             var data = bll.GetById(id);
+            if (data == null)
+                return NotFound();
+
+            return Ok(data);
+        }
+
+        [HttpGet("TaiKhoan/{maTaiKhoan}")]
+        public IActionResult GetByMaTaiKhoan(int maTaiKhoan)
+        {
+            var data = bll.GetByMaTaiKhoan(maTaiKhoan);
             if (data == null)
                 return NotFound();
 

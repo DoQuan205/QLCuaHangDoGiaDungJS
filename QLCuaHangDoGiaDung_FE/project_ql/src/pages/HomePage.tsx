@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { productsAPI, categoriesAPI, ordersAPI, orderDetailsAPI, customersAPI } from '../services/api';
+import { productsAPI, categoriesAPI, ordersAPI, customersAPI } from '../services/api';
 import type { Product, Category, User, Order } from '../types';
 import AuthModal from '../components/AuthModal';
 import './HomePage.css';
@@ -9,12 +9,14 @@ interface CartItem extends Product {
 }
 
 interface HomePageProps {
+  currentUser: User | null;
   onLoginSuccess: (user: User) => void;
+  onLogout: () => void;
 }
 
 type SortOption = 'popular' | 'newest' | 'bestSelling' | 'priceAsc' | 'priceDesc';
 
-function HomePage({ onLoginSuccess }: HomePageProps) {
+function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -23,6 +25,8 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   const [showCart, setShowCart] = useState(false);
   const [showOrders, setShowOrders] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showAccountPanel, setShowAccountPanel] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [searchTerm, setSearchTerm] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
@@ -30,6 +34,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('popular');
 
+  // Xử lý font Tiếng việt, hình ảnh
   const looksLikeMojibake = (value?: string) => {
     if (!value) return false;
     return ['Ã', 'á»', 'áº', 'Ä', 'Â', 'â', '�'].some((fragment) => value.includes(fragment));
@@ -46,11 +51,29 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     }
   };
 
-  const normalizeProduct = (product: Product): Product => ({
-    ...product,
-    tenSanPham: fixVietnameseText(product.tenSanPham),
-    hinhAnh: fixVietnameseText(product.hinhAnh),
-    moTa: fixVietnameseText(product.moTa),
+  const normalizeProduct = (product: any): Product => ({
+    maSanPham: Number(product.maSanPham ?? product.MaSanPham ?? 0),
+    tenSanPham: fixVietnameseText(product.tenSanPham ?? product.TenSanPham),
+    maLoai: Number(product.maLoai ?? product.MaLoai ?? 0),
+    giaBan: Number(product.giaBan ?? product.GiaBan ?? 0),
+    soLuong: Number(product.soLuong ?? product.SoLuong ?? 0),
+    hinhAnh: fixVietnameseText(product.hinhAnh ?? product.HinhAnh),
+    moTa: fixVietnameseText(product.moTa ?? product.MoTa),
+  });
+
+  const normalizeUser = (user: any): User => ({
+    maTaiKhoan: user?.maTaiKhoan ?? user?.MaTaiKhoan,
+    tenDangNhap: user?.tenDangNhap ?? user?.TenDangNhap ?? '',
+    matKhau: user?.matKhau ?? user?.MatKhau,
+    maQuyen: user?.maQuyen ?? user?.MaQuyen,
+    trangThai: user?.trangThai ?? user?.TrangThai,
+    role: user?.role,
+    fullName: user?.fullName ?? user?.tenKhachHang ?? user?.TenKhachHang ?? user?.tenDangNhap ?? user?.TenDangNhap ?? '',
+    maKhachHang: user?.maKhachHang ?? user?.MaKhachHang,
+    tenKhachHang: user?.tenKhachHang ?? user?.TenKhachHang,
+    soDienThoai: user?.soDienThoai ?? user?.SoDienThoai,
+    diaChi: user?.diaChi ?? user?.DiaChi,
+    email: user?.email ?? user?.Email,
   });
 
   const normalizeCategory = (category: Category): Category => ({
@@ -59,6 +82,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     moTa: fixVietnameseText(category.moTa),
   });
 
+  //Load danh sách API của Products và Categories
   useEffect(() => {
     loadProducts();
     loadCategories();
@@ -85,34 +109,68 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     }
   };
 
-  const loadCustomerOrders = async () => {
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) {
-      alert('Vui lòng đăng nhập để xem đơn hàng!');
+  //
+  const openAccountPanel = async () => {
+    if (!currentUser) {
+      alert('Vui lòng đăng nhập để xem tài khoản!');
+      setAuthMode('login');
       setShowAuth(true);
       return;
     }
 
-    const user: User = JSON.parse(savedUser);
+    await loadCustomerOrders();
+    setShowAccountPanel(true);
+  };
+
+  const resolveCustomerId = async (user: User) => {
+    if (user.maKhachHang && user.maKhachHang > 0) {
+      return user.maKhachHang;
+    }
+
+    if (user.maTaiKhoan && user.maTaiKhoan > 0) {
+      try {
+        const response = await customersAPI.getByAccountId(user.maTaiKhoan);
+        return response.data?.maKhachHang ?? response.data?.MaKhachHang ?? null;
+      } catch {
+        // ignore and try fallback below
+      }
+    }
+
+    const customersResponse = await customersAPI.getAll();
+    const customers = customersResponse.data;
+    const matchedCustomer = customers.find((customer: any) => {
+      if (customer.maTaiKhoan && customer.maTaiKhoan === user.maTaiKhoan) return true;
+      if (formDataMatch(user.email, customer.email)) return true;
+      if (formDataMatch(user.tenDangNhap, customer.email)) return true;
+      if (formDataMatch(user.fullName, customer.tenKhachHang)) return true;
+      return false;
+    });
+
+    return matchedCustomer?.maKhachHang ?? null;
+  };
+
+  const loadCustomerOrders = async () => {
+    if (!currentUser) {
+      alert('Vui lòng đăng nhập để xem đơn hàng!');
+      setAuthMode('login');
+      setShowAuth(true);
+      return;
+    }
+
+    const user = normalizeUser(currentUser);
 
     try {
       setOrdersLoading(true);
-      const customersResponse = await customersAPI.getAll();
-      const customers = customersResponse.data;
-      const matchedCustomer = customers.find((customer: any) => {
-        if (formDataMatch(user.tenDangNhap, customer.email)) return true;
-        if (formDataMatch(user.fullName, customer.tenKhachHang)) return true;
-        return false;
-      });
+      const customerId = await resolveCustomerId(user);
 
-      if (!matchedCustomer) {
+      if (!customerId) {
         setCustomerOrders([]);
         setShowCart(false);
         setShowOrders(true);
         return;
       }
 
-      const ordersResponse = await ordersAPI.getByCustomerId(matchedCustomer.maKhachHang);
+      const ordersResponse = await ordersAPI.getByCustomerId(customerId);
       setCustomerOrders(ordersResponse.data);
       setShowOrders(true);
       setShowCart(false);
@@ -201,66 +259,60 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
       return;
     }
 
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) {
-      alert('Vui lòng đăng nhập trước khi thanh toán!');
+    const userFromState = currentUser || (() => {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) as User : null;
+    })();
+
+    if (!userFromState) {
+      alert('Vui lòng đăng nhập trước khi đặt hàng!');
+      setAuthMode('login');
       setShowAuth(true);
       return;
     }
 
-    const user: User = JSON.parse(savedUser);
+    const user = normalizeUser(userFromState);
 
     try {
       setCheckoutLoading(true);
 
-      let customerId: number | undefined;
-      const customersResponse = await customersAPI.getAll();
-      const customers = customersResponse.data;
+      const customerId = await resolveCustomerId(user);
 
-      const matchedCustomer = customers.find((customer: any) => {
-        if (formDataMatch(user.tenDangNhap, customer.email)) return true;
-        if (formDataMatch(user.fullName, customer.tenKhachHang)) return true;
-        return false;
-      });
-
-      if (matchedCustomer) {
-        customerId = matchedCustomer.maKhachHang;
+      if (!customerId) {
+        alert('Tài khoản của bạn chưa có thông tin khách hàng để đặt hàng. Vui lòng đăng ký tài khoản khách hàng mới.');
+        return;
       }
 
-      const orderPayload = {
-        ngayXuat: new Date().toISOString(),
-        maNhanVien: 1,
-        maKhachHang: customerId ?? null,
-        tongTien: getTotalPrice(),
-        trangThai: 'Đợi' as const
-      };
+      const checkoutResponse = await ordersAPI.checkout({
+        donXuat: {
+          ngayXuat: new Date().toISOString(),
+          maNhanVien: null,
+          maKhachHang: customerId,
+          tongTien: getTotalPrice(),
+          trangThai: 'Đợi' as const
+        },
+        chiTietDonXuats: cart.map(item => ({
+          maSanPham: item.maSanPham,
+          soLuong: item.quantity,
+          giaBan: item.giaBan
+        }))
+      });
 
-      const createdOrderResponse = await ordersAPI.create(orderPayload);
-      const latestOrder = createdOrderResponse.data as Order;
+      const latestOrder = checkoutResponse.data as any;
+      const orderId = latestOrder?.maDonXuat ?? latestOrder?.MaDonXuat;
 
-      if (!latestOrder?.maDonXuat) {
+      if (!orderId) {
         throw new Error('Không tạo được đơn hàng mới');
       }
 
-      await Promise.all(
-        cart.map((item) =>
-          orderDetailsAPI.create({
-            maDonXuat: latestOrder.maDonXuat,
-            maSanPham: item.maSanPham,
-            soLuong: item.quantity,
-            giaBan: item.giaBan
-          })
-        )
-      );
-
-      alert(`Đặt hàng thành công! Mã đơn hàng của bạn là #DX${latestOrder.maDonXuat}. Trạng thái hiện tại: ${latestOrder.trangThai}.`);
+      alert(`Đặt hàng thành công! Mã đơn hàng của bạn là #DX${orderId}. Trạng thái hiện tại: ${latestOrder?.trangThai || 'Đợi'}.`);
       setCart([]);
       setShowCart(false);
       await loadCustomerOrders();
-      loadProducts();
-    } catch (error) {
-      console.error('Error during checkout:', error);
-      alert('Thanh toán thất bại. Vui lòng thử lại!');
+      await loadProducts();
+    } catch (error: any) {
+      console.error('Error during checkout:', error?.response?.data || error);
+      alert(error?.response?.data?.message || error?.response?.data || 'Đặt hàng thất bại. Vui lòng thử lại!');
     } finally {
       setCheckoutLoading(false);
     }
@@ -271,13 +323,15 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
   };
 
   const getOrderStatusClass = (trangThai: Order['trangThai']) => {
-    return trangThai === 'Đã giao' ? 'order-status delivered' : 'order-status pending';
+    if (trangThai === 'Đã giao') return 'order-status delivered';
+    if (trangThai === 'Đã hủy') return 'order-status canceled';
+    return 'order-status pending';
   };
 
   const getOrderNotification = (trangThai: Order['trangThai']) => {
-    return trangThai === 'Đã giao'
-      ? 'Quản lý đã xác nhận và giao đơn hàng này.'
-      : 'Đơn hàng đang chờ quản lý xác nhận.';
+    if (trangThai === 'Đã giao') return 'Quản lý đã xác nhận và giao đơn hàng này.';
+    if (trangThai === 'Đã hủy') return 'Đơn hàng đã bị hủy.';
+    return 'Đơn hàng đang chờ quản lý xác nhận.';
   };
 
   const filteredProducts = products.filter(product => {
@@ -302,6 +356,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
     }
   });
 
+  //
   if (loading) {
     return (
       <div className="loading-container">
@@ -319,8 +374,25 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
             <div className="topbar-spacer"></div>
             <button onClick={loadCustomerOrders}><i className="fas fa-bell"></i> Thông Báo</button>
             <button><i className="fas fa-question-circle"></i> Hỗ Trợ</button>
-            <button onClick={() => setShowAuth(true)}>Đăng Ký</button>
-            <button onClick={() => setShowAuth(true)}>Đăng Nhập</button>
+            {currentUser ? (
+              <>
+                <button className="user-chip" onClick={openAccountPanel}>
+                  <i className="fas fa-user"></i> {currentUser.fullName || currentUser.tenDangNhap}
+                </button>
+                <button onClick={onLogout}>Đăng xuất</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => {
+                  setAuthMode('register');
+                  setShowAuth(true);
+                }}>Đăng Ký</button>
+                <button onClick={() => {
+                  setAuthMode('login');
+                  setShowAuth(true);
+                }}>Đăng Nhập</button>
+              </>
+            )}
           </div>
         </div>
 
@@ -623,40 +695,83 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
                 <span className="total-price">{formatCurrency(getTotalPrice())}</span>
               </div>
               <button className="btn-checkout" onClick={handleCheckout} disabled={checkoutLoading}>
-                <i className="fas fa-credit-card"></i>
-                {checkoutLoading ? 'Đang xử lý...' : 'Thanh toán'}
+                <i className="fas fa-shopping-bag"></i>
+                {checkoutLoading ? 'Đang xử lý...' : 'Đặt hàng'}
               </button>
             </div>
           )}
         </div>
       )}
 
-      {showOrders && (
-        <div className="cart-sidebar orders-sidebar">
-          <div className="cart-header">
-            <h3>Đơn hàng của tôi</h3>
-            <button className="btn-close" onClick={() => setShowOrders(false)}>
-              <i className="fas fa-times"></i>
-            </button>
-          </div>
-          <div className="cart-items orders-list">
-            {ordersLoading ? (
-              <p className="empty-cart">Đang tải đơn hàng...</p>
-            ) : customerOrders.length > 0 ? (
-              customerOrders.map((order) => (
-                <div key={order.maDonXuat} className="order-card">
-                  <div className="order-card-header">
-                    <h4>#DX{order.maDonXuat}</h4>
-                    <span className={getOrderStatusClass(order.trangThai)}>{order.trangThai}</span>
-                  </div>
-                  <p><strong>Ngày đặt:</strong> {new Date(order.ngayXuat).toLocaleDateString('vi-VN')}</p>
-                  <p><strong>Tổng tiền:</strong> {formatCurrency(order.tongTien)}</p>
-                  <p className="order-notification">{getOrderNotification(order.trangThai)}</p>
+      {showAccountPanel && currentUser && (
+        <div className="account-panel">
+          <div className="account-panel-overlay" onClick={() => setShowAccountPanel(false)}></div>
+          <div className="account-panel-drawer">
+            <div className="account-panel-sidebar">
+              <div className="account-profile">
+                <div className="account-avatar">{(currentUser.fullName || currentUser.tenDangNhap || 'U').charAt(0).toUpperCase()}</div>
+                <div>
+                  <h3>{currentUser.fullName || currentUser.tenDangNhap}</h3>
+                  <button className="link-button" onClick={openAccountPanel}>Sửa Hồ Sơ</button>
                 </div>
-              ))
-            ) : (
-              <p className="empty-cart">Bạn chưa có đơn hàng nào.</p>
-            )}
+              </div>
+              <button className="account-nav active"><i className="fas fa-user"></i> Tài Khoản Của Tôi</button>
+              <button className="account-nav active"><i className="fas fa-shopping-bag"></i> Đơn Mua</button>
+              <button className="account-nav"><i className="fas fa-bell"></i> Thông Báo</button>
+              <button className="account-nav"><i className="fas fa-ticket-alt"></i> Kho Voucher</button>
+              <button className="account-nav"><i className="fas fa-coins"></i> Shopee Xu</button>
+            </div>
+            <div className="account-panel-content">
+              <div className="orders-tabs">
+                <button className="active">Tất cả</button>
+                <button>Chờ thanh toán ({customerOrders.length})</button>
+                <button>Vận chuyển</button>
+                <button>Đang giao</button>
+                <button>Hoàn thành</button>
+                <button>Đã hủy</button>
+                <button>Trả hàng/Hoàn tiền</button>
+              </div>
+
+              <div className="cart-items orders-list account-orders-list">
+                {ordersLoading ? (
+                  <p className="empty-cart">Đang tải đơn hàng...</p>
+                ) : customerOrders.length > 0 ? (
+                  customerOrders.map((order) => (
+                    <div key={order.maDonXuat} className="account-order-card">
+                      <div className="order-card-header">
+                        <h4>GiaDung Mall</h4>
+                        <span className={getOrderStatusClass(order.trangThai)}>{order.trangThai}</span>
+                      </div>
+                      <div className="account-order-body">
+                        <div className="account-order-thumb"><i className="fas fa-box-open"></i></div>
+                        <div className="account-order-info">
+                          <p><strong>Đơn hàng:</strong> #DX{order.maDonXuat}</p>
+                          <p><strong>Ngày đặt:</strong> {new Date(order.ngayXuat).toLocaleDateString('vi-VN')}</p>
+                          <p><strong>Tổng tiền:</strong> {formatCurrency(order.tongTien)}</p>
+                          <p className="order-notification">{getOrderNotification(order.trangThai)}</p>
+                          <div className="account-order-actions">
+                            <button className="btn-order-detail" onClick={() => alert(`Đơn #DX${order.maDonXuat}\nTrạng thái: ${order.trangThai}`)}>Xem chi tiết</button>
+                            {order.trangThai === 'Đợi' && (
+                              <button className="btn-order-cancel" onClick={async () => {
+                                try {
+                                  await ordersAPI.cancel(order.maDonXuat);
+                                  await loadCustomerOrders();
+                                } catch (error) {
+                                  console.error('Error canceling customer order:', error);
+                                  alert('Không thể hủy đơn hàng!');
+                                }
+                              }}>Hủy đơn</button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-cart">Bạn chưa có đơn hàng nào.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -668,6 +783,7 @@ function HomePage({ onLoginSuccess }: HomePageProps) {
       
       <AuthModal 
         isOpen={showAuth} 
+        defaultMode={authMode}
         onClose={() => setShowAuth(false)}
         onLoginSuccess={onLoginSuccess}
       />

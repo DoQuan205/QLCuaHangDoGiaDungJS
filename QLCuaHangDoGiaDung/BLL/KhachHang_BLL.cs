@@ -1,4 +1,4 @@
-﻿using DAL;
+using DAL;
 using QLCuaHangDoGiaDung.Models;
 
 namespace BLL
@@ -47,6 +47,14 @@ namespace BLL
         public KhachHang GetById(int ma)
         {
             return dal.GetById(ma);
+        }
+
+        public KhachHang GetByMaTaiKhoan(int maTaiKhoan)
+        {
+            if (maTaiKhoan <= 0)
+                return null;
+
+            return dal.GetByMaTaiKhoan(maTaiKhoan);
         }
     }
 }

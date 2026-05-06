@@ -66,7 +66,7 @@ CREATE TABLE SanPham (
     MaSanPham INT IDENTITY(1,1) PRIMARY KEY,
     TenSanPham NVARCHAR(100),
     MaLoai INT,
-    GiaBan FLOAT,
+    GiaBan DECIMAL(18,2),
     SoLuong INT,
     HinhAnh NVARCHAR(200),
     MoTa NVARCHAR(200),
@@ -80,7 +80,7 @@ CREATE TABLE DonNhap (
     NgayNhap DATE,
     MaNhanVien INT,
     MaNhaCungCap INT,
-    TongTien FLOAT,
+    TongTien DECIMAL(18,2),
 
     FOREIGN KEY (MaNhanVien) REFERENCES NhanVien(MaNhanVien),
     FOREIGN KEY (MaNhaCungCap) REFERENCES NhaCungCap(MaNhaCungCap)
@@ -92,7 +92,7 @@ CREATE TABLE DonXuat (
     NgayXuat DATE,
     MaNhanVien INT,
     MaKhachHang INT,
-    TongTien FLOAT,
+    TongTien DECIMAL(18,2),
     TrangThai NVARCHAR(20) NOT NULL DEFAULT N'Đợi',
 
     FOREIGN KEY (MaNhanVien) REFERENCES NhanVien(MaNhanVien),
@@ -105,7 +105,7 @@ CREATE TABLE ChiTietDonNhap (
     MaDonNhap INT,
     MaSanPham INT,
     SoLuong INT,
-    GiaNhap FLOAT,
+    GiaNhap DECIMAL(18,2),
 
     FOREIGN KEY (MaDonNhap) REFERENCES DonNhap(MaDonNhap),
     FOREIGN KEY (MaSanPham) REFERENCES SanPham(MaSanPham)
@@ -117,7 +117,7 @@ CREATE TABLE ChiTietDonXuat (
     MaDonXuat INT,
     MaSanPham INT,
     SoLuong INT,
-    GiaBan FLOAT,
+    GiaBan DECIMAL(18,2),
 
     FOREIGN KEY (MaDonXuat) REFERENCES DonXuat(MaDonXuat),
     FOREIGN KEY (MaSanPham) REFERENCES SanPham(MaSanPham)
@@ -138,7 +138,8 @@ GO
 INSERT INTO PhanQuyen (TenQuyen, MoTa)
 VALUES 
 (N'Admin', N'Quản trị hệ thống'),
-(N'Nhân viên', N'Quản lý bán hàng');
+(N'Nhân viên', N'Quản lý bán hàng'),
+(N'Khách hàng', N'Tài khoản mua hàng');
 
 INSERT INTO LoaiSanPham (TenLoai, MoTa)
 VALUES 
@@ -154,12 +155,14 @@ VALUES
 INSERT INTO TaiKhoan (TenDangNhap, MatKhau, MaQuyen, TrangThai)
 VALUES 
 ('admin', '123456', 1, 1),
-('nhanvien1', '123456', 2, 1);
+('nhanvien1', '123456', 2, 1),
+('khachhang1', '123456', 3, 1);
 
 INSERT INTO KhachHang (TenKhachHang, SoDienThoai, DiaChi, Email, MaTaiKhoan)
 VALUES 
 (N'Nguyễn Văn A', '0911111111', N'Hà Nội', 'a@gmail.com', NULL),
-(N'Trần Thị B', '0922222222', N'Hải Phòng', 'b@gmail.com', NULL);
+(N'Trần Thị B', '0922222222', N'Hải Phòng', 'b@gmail.com', NULL),
+(N'Khách Hàng Mẫu', '0933333333', N'Hà Nội', 'khachhang1@gmail.com', 3);
 
 -- Thêm Nhân viên
 INSERT INTO NhanVien (TenNhanVien, NgaySinh, SoDienThoai, DiaChi, MaTaiKhoan)
@@ -240,7 +243,6 @@ VALUES
 (3, 11, 1, 8500000),
 (3, 7, 1, 650000);
 GO
-
 
 SELECT 'Phân quyền' as N'Bảng', COUNT(*) as N'Số lượng' FROM PhanQuyen
 UNION ALL SELECT N'Tài khoản', COUNT(*) FROM TaiKhoan

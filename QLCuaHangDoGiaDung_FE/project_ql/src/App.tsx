@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import HomePage from './pages/HomePage';
 import AdminDashboard from './pages/AdminDashboard';
+import type { User } from './types';
 import './App.css';
 
 function App() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -13,7 +14,7 @@ function App() {
     }
   }, []);
 
-  const handleLoginSuccess = (userData: any) => {
+  const handleLoginSuccess = (userData: User) => {
     setUser(userData);
   };
 
@@ -26,7 +27,7 @@ function App() {
     return <AdminDashboard onLogout={handleLogout} />;
   }
 
-  return <HomePage onLoginSuccess={handleLoginSuccess} />;
+  return <HomePage currentUser={user} onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />;
 }
 
 export default App;

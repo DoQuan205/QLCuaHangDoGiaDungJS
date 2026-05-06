@@ -7,5 +7,6 @@
         public string SoDienThoai { get; set; }
         public string DiaChi { get; set; }
         public string Email { get; set; }
+        public int? MaTaiKhoan { get; set; }
     }
 }

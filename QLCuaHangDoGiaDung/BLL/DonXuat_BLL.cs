@@ -19,9 +19,6 @@ namespace BLL
 
         public DonXuat Insert(DonXuat dx)
         {
-            if (dx.MaNhanVien <= 0)
-                return null;
-
             if (dx.TongTien < 0)
                 return null;
 
@@ -34,7 +31,7 @@ namespace BLL
             if (dx.MaDonXuat <= 0)
                 return false;
 
-            if (dx.MaNhanVien <= 0 || dx.TongTien < 0)
+            if (dx.TongTien < 0)
                 return false;
 
             if (!IsValidTrangThai(dx.TrangThai))
@@ -74,7 +71,7 @@ namespace BLL
 
         private bool IsValidTrangThai(string? trangThai)
         {
-            return trangThai == "Đợi" || trangThai == "Đã giao";
+            return trangThai == "Đợi" || trangThai == "Đã giao" || trangThai == "Đã hủy";
         }
     }
 }

@@ -15,7 +15,9 @@ function OrderManagement() {
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
 
   const getStatusClass = (trangThai: Order['trangThai']) => {
-    return trangThai === 'Đã giao' ? 'badge badge-success' : 'badge badge-warning';
+    if (trangThai === 'Đã giao') return 'badge badge-success';
+    if (trangThai === 'Đã hủy') return 'badge badge-danger';
+    return 'badge badge-warning';
   };
 
   useEffect(() => {
@@ -65,22 +67,33 @@ function OrderManagement() {
     return products.find(product => product.maSanPham === productId)?.tenSanPham || `SP${productId}`;
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm(`Bạn có chắc muốn xóa đơn hàng #${id}?`)) {
-      try {
-        await orderDetailsAPI.deleteByOrderId(id);
-        await ordersAPI.delete(id);
-        alert('Xóa đơn hàng thành công!');
-        loadOrders();
-      } catch (error) {
-        console.error('Error deleting order:', error);
-        alert('Không thể xóa đơn hàng!');
-      }
+  const handleCancelOrder = async (order: Order) => {
+    if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng #${order.maDonXuat}?`)) {
+      return;
+    }
+
+    try {
+      setUpdatingStatusId(order.maDonXuat);
+      await ordersAPI.cancel(order.maDonXuat);
+      setOrders((prevOrders) =>
+        prevOrders.map((item) =>
+          item.maDonXuat === order.maDonXuat ? { ...item, trangThai: 'Đã hủy' } : item
+        )
+      );
+      setSelectedOrder((current) =>
+        current && current.maDonXuat === order.maDonXuat ? { ...current, trangThai: 'Đã hủy' } : current
+      );
+      alert(`Đơn hàng #DX${order.maDonXuat} đã bị hủy.`);
+    } catch (error) {
+      console.error('Error canceling order:', error);
+      alert('Không thể hủy đơn hàng!');
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 
   const handleConfirmDelivery = async (order: Order) => {
-    if (order.trangThai === 'Đã giao') {
+    if (order.trangThai !== 'Đợi') {
       return;
     }
 
@@ -181,17 +194,18 @@ function OrderManagement() {
                     <button
                       className="btn-action btn-edit"
                       onClick={() => handleConfirmDelivery(order)}
-                      title={order.trangThai === 'Đã giao' ? 'Đơn hàng đã giao' : 'Xác nhận giao hàng'}
-                      disabled={order.trangThai === 'Đã giao' || updatingStatusId === order.maDonXuat}
+                      title={order.trangThai === 'Đợi' ? 'Xác nhận giao hàng' : 'Đơn hàng không thể xác nhận'}
+                      disabled={order.trangThai !== 'Đợi' || updatingStatusId === order.maDonXuat}
                     >
                       <i className="fas fa-check"></i>
                     </button>
                     <button 
                       className="btn-action btn-delete" 
-                      onClick={() => handleDelete(order.maDonXuat)}
-                      title="Xóa"
+                      onClick={() => handleCancelOrder(order)}
+                      title={order.trangThai === 'Đã hủy' ? 'Đơn hàng đã hủy' : 'Hủy đơn'}
+                      disabled={order.trangThai === 'Đã hủy' || updatingStatusId === order.maDonXuat}
                     >
-                      <i className="fas fa-trash"></i>
+                      <i className="fas fa-ban"></i>
                     </button>
                   </div>
                 </td>

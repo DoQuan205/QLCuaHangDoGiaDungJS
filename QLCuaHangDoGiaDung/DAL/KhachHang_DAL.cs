@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using QLCuaHangDoGiaDung.Models;
 
@@ -38,7 +38,8 @@ namespace DAL
                         TenKhachHang = reader["TenKhachHang"].ToString(),
                         SoDienThoai = reader["SoDienThoai"].ToString(),
                         DiaChi = reader["DiaChi"].ToString(),
-                        Email = reader["Email"].ToString()
+                        Email = reader["Email"].ToString(),
+                        MaTaiKhoan = reader["MaTaiKhoan"] == DBNull.Value ? null : (int?)reader["MaTaiKhoan"]
                     });
                 }
             }
@@ -52,14 +53,15 @@ namespace DAL
             {
                 conn.Open();
                 string sql = @"INSERT INTO KhachHang
-                (TenKhachHang, SoDienThoai, DiaChi, Email)
-                VALUES (@Ten, @SDT, @DiaChi, @Email)";
+                (TenKhachHang, SoDienThoai, DiaChi, Email, MaTaiKhoan)
+                VALUES (@Ten, @SDT, @DiaChi, @Email, @MaTaiKhoan)";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@Ten", kh.TenKhachHang);
                 cmd.Parameters.AddWithValue("@SDT", kh.SoDienThoai);
-                cmd.Parameters.AddWithValue("@DiaChi", kh.DiaChi);
-                cmd.Parameters.AddWithValue("@Email", kh.Email);
+                cmd.Parameters.AddWithValue("@DiaChi", kh.DiaChi ?? string.Empty);
+                cmd.Parameters.AddWithValue("@Email", kh.Email ?? string.Empty);
+                cmd.Parameters.AddWithValue("@MaTaiKhoan", kh.MaTaiKhoan.HasValue ? kh.MaTaiKhoan.Value : DBNull.Value);
 
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -75,15 +77,17 @@ namespace DAL
                     TenKhachHang=@Ten,
                     SoDienThoai=@SDT,
                     DiaChi=@DiaChi,
-                    Email=@Email
+                    Email=@Email,
+                    MaTaiKhoan=@MaTaiKhoan
                     WHERE MaKhachHang=@Ma";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@Ma", kh.MaKhachHang);
                 cmd.Parameters.AddWithValue("@Ten", kh.TenKhachHang);
                 cmd.Parameters.AddWithValue("@SDT", kh.SoDienThoai);
-                cmd.Parameters.AddWithValue("@DiaChi", kh.DiaChi);
-                cmd.Parameters.AddWithValue("@Email", kh.Email);
+                cmd.Parameters.AddWithValue("@DiaChi", kh.DiaChi ?? string.Empty);
+                cmd.Parameters.AddWithValue("@Email", kh.Email ?? string.Empty);
+                cmd.Parameters.AddWithValue("@MaTaiKhoan", kh.MaTaiKhoan.HasValue ? kh.MaTaiKhoan.Value : DBNull.Value);
 
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -104,6 +108,19 @@ namespace DAL
             }
         }
 
+        private KhachHang ReadCustomer(SqlDataReader reader)
+        {
+            return new KhachHang
+            {
+                MaKhachHang = (int)reader["MaKhachHang"],
+                TenKhachHang = reader["TenKhachHang"].ToString(),
+                SoDienThoai = reader["SoDienThoai"].ToString(),
+                DiaChi = reader["DiaChi"].ToString(),
+                Email = reader["Email"].ToString(),
+                MaTaiKhoan = reader["MaTaiKhoan"] == DBNull.Value ? null : (int?)reader["MaTaiKhoan"]
+            };
+        }
+
         // 🔹 Lấy theo ID
         public KhachHang GetById(int ma)
         {
@@ -120,14 +137,32 @@ namespace DAL
 
                 if (reader.Read())
                 {
-                    kh = new KhachHang
-                    {
-                        MaKhachHang = (int)reader["MaKhachHang"],
-                        TenKhachHang = reader["TenKhachHang"].ToString(),
-                        SoDienThoai = reader["SoDienThoai"].ToString(),
-                        DiaChi = reader["DiaChi"].ToString(),
-                        Email = reader["Email"].ToString()
-                    };
+                    kh = ReadCustomer(reader);
+                }
+            }
+
+            return kh;
+        }
+
+        public KhachHang GetByMaTaiKhoan(int maTaiKhoan)
+        {
+            if (maTaiKhoan <= 0)
+                return null;
+
+            KhachHang kh = null;
+
+            using (SqlConnection conn = GetConn())
+            {
+                conn.Open();
+                string sql = "SELECT TOP 1 * FROM KhachHang WHERE MaTaiKhoan=@MaTaiKhoan ORDER BY MaKhachHang DESC";
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@MaTaiKhoan", maTaiKhoan);
+
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    kh = ReadCustomer(reader);
                 }
             }
 

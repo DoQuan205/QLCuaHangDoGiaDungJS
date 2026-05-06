@@ -32,7 +32,15 @@ function ProductManagement() {
     try {
       setLoading(true);
       const response = await productsAPI.getAll();
-      setProducts(response.data);
+      setProducts(response.data.map((product: any) => ({
+        maSanPham: Number(product.maSanPham ?? product.MaSanPham ?? 0),
+        tenSanPham: product.tenSanPham ?? product.TenSanPham ?? '',
+        maLoai: Number(product.maLoai ?? product.MaLoai ?? 0),
+        giaBan: Number(product.giaBan ?? product.GiaBan ?? 0),
+        soLuong: Number(product.soLuong ?? product.SoLuong ?? 0),
+        hinhAnh: product.hinhAnh ?? product.HinhAnh ?? '',
+        moTa: product.moTa ?? product.MoTa ?? '',
+      })));
     } catch (error) {
       console.error('Error loading products:', error);
       alert('Không thể tải danh sách sản phẩm!');
@@ -155,6 +163,7 @@ function ProductManagement() {
     }
   };
 
+  //Xử lý dữ liệu sau khi thêm hoặc sửa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     

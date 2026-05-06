@@ -1,25 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using BLL;
 using QLCuaHangDoGiaDung.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     public class DonXuatStatusRequest
     {
         [Required]
         public string TrangThai { get; set; } = string.Empty;
     }
 
+    public class DonXuatCheckoutRequest
+    {
+        [Required]
+        public DonXuat DonXuat { get; set; } = new DonXuat();
+
+        [Required]
+        public List<ChiTietDonXuat> ChiTietDonXuats { get; set; } = new List<ChiTietDonXuat>();
+    }
+
+    [Route("api/[controller]")]
+    [ApiController]
     public class DonXuatController : ControllerBase
     {
         private readonly DonXuat_BLL bll;
+        private readonly IConfiguration config;
 
-        public DonXuatController(DonXuat_BLL _bll)
+        public DonXuatController(DonXuat_BLL _bll, IConfiguration _config)
         {
             bll = _bll;
+            config = _config;
         }
 
         [HttpGet]
@@ -44,14 +56,108 @@ namespace API.Controllers
             return Ok(bll.GetByMaKhachHang(maKhachHang));
         }
 
+        [HttpPut("{id}/cancel")]
+        public IActionResult Cancel(int id)
+        {
+            var existingOrder = bll.GetById(id);
+            if (existingOrder == null)
+                return NotFound(new { message = "Không tìm thấy đơn hàng" });
+
+            if (!bll.UpdateStatus(id, "Đã hủy"))
+                return BadRequest(new { message = "Không thể hủy đơn hàng" });
+
+            return Ok(new { message = "Hủy đơn hàng thành công" });
+        }
+
         [HttpPost]
         public IActionResult Create(DonXuat dx)
         {
+            if (dx.MaKhachHang <= 0)
+                return BadRequest(new { message = "Thiếu mã khách hàng" });
+
             var createdOrder = bll.Insert(dx);
             if (createdOrder == null)
                 return BadRequest(new { message = "Không thể tạo đơn xuất" });
 
             return Ok(createdOrder);
+        }
+
+        [HttpPost("checkout")]
+        public IActionResult Checkout([FromBody] DonXuatCheckoutRequest request)
+        {
+            if (request?.DonXuat == null)
+                return BadRequest(new { message = "Thiếu dữ liệu đơn hàng" });
+
+            if (request.DonXuat.MaKhachHang <= 0)
+                return BadRequest(new { message = "Thiếu mã khách hàng" });
+
+            if (request.ChiTietDonXuats == null || request.ChiTietDonXuats.Count == 0)
+                return BadRequest(new { message = "Giỏ hàng trống" });
+
+            foreach (var ct in request.ChiTietDonXuats)
+            {
+                if (ct.MaSanPham <= 0 || ct.SoLuong <= 0 || ct.GiaBan <= 0)
+                    return BadRequest(new { message = "Dữ liệu chi tiết đơn hàng không hợp lệ" });
+            }
+
+            using (var conn = new SqlConnection(config.GetConnectionString("DefaultConnection")))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        var order = request.DonXuat;
+                        order.TrangThai = string.IsNullOrWhiteSpace(order.TrangThai) ? "Đợi" : order.TrangThai;
+
+                        var insertOrderSql = @"INSERT INTO DonXuat
+                        (NgayXuat, MaNhanVien, MaKhachHang, TongTien, TrangThai)
+                        OUTPUT INSERTED.MaDonXuat
+                        VALUES (@NgayXuat, @MaNV, @MaKH, @TongTien, @TrangThai)";
+
+                        using var orderCmd = new SqlCommand(insertOrderSql, conn, tx);
+                        orderCmd.Parameters.AddWithValue("@NgayXuat", order.NgayXuat == default ? DateTime.Now : order.NgayXuat);
+                        orderCmd.Parameters.AddWithValue("@MaNV", (object?)order.MaNhanVien ?? DBNull.Value);
+                        orderCmd.Parameters.AddWithValue("@MaKH", (object?)order.MaKhachHang ?? DBNull.Value);
+                        orderCmd.Parameters.AddWithValue("@TongTien", order.TongTien);
+                        orderCmd.Parameters.AddWithValue("@TrangThai", order.TrangThai);
+
+                        var newOrderIdObj = orderCmd.ExecuteScalar();
+                        if (newOrderIdObj == null || newOrderIdObj == DBNull.Value)
+                            throw new Exception("Không lấy được mã đơn hàng mới");
+
+                        var newOrderId = Convert.ToInt32(newOrderIdObj);
+                        order.MaDonXuat = newOrderId;
+
+                        var insertDetailSql = @"INSERT INTO ChiTietDonXuat
+                        (MaDonXuat, MaSanPham, SoLuong, GiaBan)
+                        VALUES (@MaDonXuat, @MaSanPham, @SoLuong, @GiaBan)";
+
+                        foreach (var ct in request.ChiTietDonXuats)
+                        {
+                            using var detailCmd = new SqlCommand(insertDetailSql, conn, tx);
+                            detailCmd.Parameters.AddWithValue("@MaDonXuat", newOrderId);
+                            detailCmd.Parameters.AddWithValue("@MaSanPham", ct.MaSanPham);
+                            detailCmd.Parameters.AddWithValue("@SoLuong", ct.SoLuong);
+                            detailCmd.Parameters.AddWithValue("@GiaBan", ct.GiaBan);
+                            detailCmd.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                        return Ok(new
+                        {
+                            message = "Đặt hàng thành công",
+                            maDonXuat = newOrderId,
+                            trangThai = order.TrangThai
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        tx.Rollback();
+                        return BadRequest(new { message = "Không thể tạo đơn hàng", detail = ex.Message });
+                    }
+                }
+            }
         }
 
         [HttpPut("{id}")]
