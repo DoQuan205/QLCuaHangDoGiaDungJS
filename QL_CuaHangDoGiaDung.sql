@@ -100,6 +100,22 @@ CREATE TABLE DonXuat (
 );
 GO
 
+
+CREATE TABLE ThongBao (
+    MaThongBao INT IDENTITY(1,1) PRIMARY KEY,
+    MaKhachHang INT NOT NULL,
+    MaDonXuat INT NULL,
+    TieuDe NVARCHAR(200) NOT NULL,
+    NoiDung NVARCHAR(500) NOT NULL,
+    Loai NVARCHAR(50) NOT NULL,
+    DaDoc BIT NOT NULL DEFAULT 0,
+    NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+
+    FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang),
+    FOREIGN KEY (MaDonXuat) REFERENCES DonXuat(MaDonXuat)
+);
+GO
+
 CREATE TABLE ChiTietDonNhap (
     MaCTNhap INT IDENTITY(1,1) PRIMARY KEY,
     MaDonNhap INT,

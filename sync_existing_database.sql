@@ -64,7 +64,26 @@ BEGIN
 END
 GO
 
--- 2) Kiểm tra nhanh dữ liệu đơn xuất sau khi đồng bộ
+-- 2) Tạo bảng thông báo nếu chưa có
+IF OBJECT_ID(N'dbo.ThongBao', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ThongBao (
+        MaThongBao INT IDENTITY(1,1) PRIMARY KEY,
+        MaKhachHang INT NOT NULL,
+        MaDonXuat INT NULL,
+        TieuDe NVARCHAR(200) NOT NULL,
+        NoiDung NVARCHAR(500) NOT NULL,
+        Loai NVARCHAR(50) NOT NULL,
+        DaDoc BIT NOT NULL DEFAULT 0,
+        NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+
+        FOREIGN KEY (MaKhachHang) REFERENCES dbo.KhachHang(MaKhachHang),
+        FOREIGN KEY (MaDonXuat) REFERENCES dbo.DonXuat(MaDonXuat)
+    );
+END
+GO
+
+-- 3) Kiểm tra nhanh dữ liệu đơn xuất sau khi đồng bộ
 SELECT MaDonXuat, NgayXuat, MaKhachHang, TongTien, TrangThai
 FROM dbo.DonXuat
 ORDER BY MaDonXuat DESC;
@@ -72,7 +91,7 @@ GO
 
 /*
   Ghi chú:
-  Các bảng khác trong hệ thống đã khớp khá tốt với backend/frontend.
-  Nếu bạn muốn siết thêm dữ liệu (NOT NULL / UNIQUE) cho KhachHang, SanPham,
-  NhaCungCap, TaiKhoan... thì nên chạy sau khi dọn dữ liệu hiện tại.
+  Nếu DB hiện tại đã có dữ liệu KhachHang/DonXuat thì script trên sẽ thêm bảng ThongBao
+  mà không ảnh hưởng các bảng đang dùng.
 */
+

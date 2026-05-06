@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { productsAPI, categoriesAPI, ordersAPI, customersAPI } from '../services/api';
-import type { Product, Category, User, Order } from '../types';
+import { productsAPI, categoriesAPI, ordersAPI, customersAPI, notificationsAPI } from '../services/api';
+import type { Product, Category, User, Order, Notification } from '../types';
 import AuthModal from '../components/AuthModal';
 import './HomePage.css';
 
@@ -30,7 +30,9 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
+  const [customerNotifications, setCustomerNotifications] = useState<Notification[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('popular');
 
@@ -118,7 +120,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
       return;
     }
 
-    await loadCustomerOrders();
+    await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
     setShowAccountPanel(true);
   };
 
@@ -179,6 +181,44 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
       alert('Không thể tải đơn hàng của bạn!');
     } finally {
       setOrdersLoading(false);
+    }
+  };
+
+  const loadCustomerNotifications = async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    const user = normalizeUser(currentUser);
+
+    try {
+      setNotificationsLoading(true);
+      const customerId = await resolveCustomerId(user);
+
+      if (!customerId) {
+        setCustomerNotifications([]);
+        return;
+      }
+
+      const notificationsResponse = await notificationsAPI.getByCustomerId(customerId);
+      setCustomerNotifications(notificationsResponse.data);
+    } catch (error) {
+      console.error('Error loading customer notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const markNotificationAsRead = async (notificationId: number) => {
+    try {
+      await notificationsAPI.markAsRead(notificationId);
+      setCustomerNotifications((prevNotifications) =>
+        prevNotifications.map((item) =>
+          item.maThongBao === notificationId ? { ...item, daDoc: true } : item
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -308,8 +348,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
       alert(`Đặt hàng thành công! Mã đơn hàng của bạn là #DX${orderId}. Trạng thái hiện tại: ${latestOrder?.trangThai || 'Đợi'}.`);
       setCart([]);
       setShowCart(false);
-      await loadCustomerOrders();
-      await loadProducts();
+      await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
     } catch (error: any) {
       console.error('Error during checkout:', error?.response?.data || error);
       alert(error?.response?.data?.message || error?.response?.data || 'Đặt hàng thất bại. Vui lòng thử lại!');
@@ -322,6 +361,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
     return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase());
   };
 
+
   const getOrderStatusClass = (trangThai: Order['trangThai']) => {
     if (trangThai === 'Đã giao') return 'order-status delivered';
     if (trangThai === 'Đã hủy') return 'order-status canceled';
@@ -333,6 +373,8 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
     if (trangThai === 'Đã hủy') return 'Đơn hàng đã bị hủy.';
     return 'Đơn hàng đang chờ quản lý xác nhận.';
   };
+
+  const unreadNotificationCount = customerNotifications.filter((notification) => !notification.daDoc).length;
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.tenSanPham.toLowerCase().includes(searchTerm.toLowerCase());
@@ -372,7 +414,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
         <div className="shop-topbar">
           <div className="container topbar-content">
             <div className="topbar-spacer"></div>
-            <button onClick={loadCustomerOrders}><i className="fas fa-bell"></i> Thông Báo</button>
+            <button><i className="fas fa-bell"></i> Thông Báo</button>
             <button><i className="fas fa-question-circle"></i> Hỗ Trợ</button>
             {currentUser ? (
               <>
@@ -722,6 +764,27 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
               <button className="account-nav"><i className="fas fa-coins"></i> Shopee Xu</button>
             </div>
             <div className="account-panel-content">
+              <div className="notification-summary">
+                <h4>Thông báo mới</h4>
+                {notificationsLoading ? (
+                  <p className="empty-cart">Đang tải thông báo...</p>
+                ) : customerNotifications.length > 0 ? (
+                  customerNotifications.slice(0, 5).map((notification) => (
+                    <div
+                      key={notification.maThongBao}
+                      className={`notification-item ${notification.daDoc ? 'read' : 'unread'}`}
+                      onClick={() => markNotificationAsRead(notification.maThongBao)}
+                    >
+                      <strong>{notification.tieuDe}</strong>
+                      <p>{notification.noiDung}</p>
+                      <small>{new Date(notification.ngayTao).toLocaleString('vi-VN')}</small>
+                    </div>
+                  ))
+                ) : (
+                  <p className="empty-cart">Bạn chưa có thông báo nào.</p>
+                )}
+              </div>
+
               <div className="orders-tabs">
                 <button className="active">Tất cả</button>
                 <button>Chờ thanh toán ({customerOrders.length})</button>
@@ -755,7 +818,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
                               <button className="btn-order-cancel" onClick={async () => {
                                 try {
                                   await ordersAPI.cancel(order.maDonXuat);
-                                  await loadCustomerOrders();
+                                  await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
                                 } catch (error) {
                                   console.error('Error canceling customer order:', error);
                                   alert('Không thể hủy đơn hàng!');

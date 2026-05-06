@@ -25,6 +25,17 @@ export interface OrderDetail {
   giaBan: number;
 }
 
+export interface Notification {
+  maThongBao: number;
+  maKhachHang: number;
+  maDonXuat?: number | null;
+  tieuDe: string;
+  noiDung: string;
+  loai: string;
+  daDoc: boolean;
+  ngayTao: string;
+}
+
 export interface Customer {
   maKhachHang: number;
   tenKhachHang: string;

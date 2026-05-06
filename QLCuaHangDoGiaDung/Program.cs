@@ -44,6 +44,9 @@ builder.Services.AddScoped<NhaCungCap_BLL>();
 builder.Services.AddScoped<DonXuat_DAL>();
 builder.Services.AddScoped<DonXuat_BLL>();
 
+builder.Services.AddScoped<ThongBao_DAL>();
+builder.Services.AddScoped<ThongBao_BLL>();
+
 builder.Services.AddScoped<ChiTietDonXuat_DAL>();
 builder.Services.AddScoped<ChiTietDonXuat_BLL>();
 
@@ -89,6 +92,25 @@ using (var scope = app.Services.CreateScope())
             var insertRoleCmd = new SqlCommand("INSERT INTO PhanQuyen (TenQuyen, MoTa) VALUES (N'Khách hàng', N'Tài khoản mua hàng')", conn);
             insertRoleCmd.ExecuteNonQuery();
         }
+
+        var createThongBaoTableSql = @"
+IF OBJECT_ID(N'dbo.ThongBao', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ThongBao (
+        MaThongBao INT IDENTITY(1,1) PRIMARY KEY,
+        MaKhachHang INT NOT NULL,
+        MaDonXuat INT NULL,
+        TieuDe NVARCHAR(200) NOT NULL,
+        NoiDung NVARCHAR(500) NOT NULL,
+        Loai NVARCHAR(50) NOT NULL,
+        DaDoc BIT NOT NULL DEFAULT 0,
+        NgayTao DATETIME NOT NULL DEFAULT GETDATE(),
+        FOREIGN KEY (MaKhachHang) REFERENCES dbo.KhachHang(MaKhachHang),
+        FOREIGN KEY (MaDonXuat) REFERENCES dbo.DonXuat(MaDonXuat)
+    );
+END";
+        var createThongBaoCmd = new SqlCommand(createThongBaoTableSql, conn);
+        createThongBaoCmd.ExecuteNonQuery();
     }
 }
 

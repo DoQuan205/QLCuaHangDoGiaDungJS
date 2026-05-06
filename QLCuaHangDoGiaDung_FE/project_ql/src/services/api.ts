@@ -56,6 +56,15 @@ export const customersAPI = {
   delete: (id: number) => api.delete(`/KhachHang/${id}`),
 };
 
+// Notifications API
+export const notificationsAPI = {
+  getAll: () => api.get('/ThongBao'),
+  getByCustomerId: (customerId: number) => api.get(`/ThongBao/KhachHang/${customerId}`),
+  create: (data: any) => api.post('/ThongBao', data),
+  markAsRead: (id: number) => api.put(`/ThongBao/${id}/read`),
+  delete: (id: number) => api.delete(`/ThongBao/${id}`),
+};
+
 // Suppliers API
 export const suppliersAPI = {
   getAll: () => api.get('/NhaCungCap'),

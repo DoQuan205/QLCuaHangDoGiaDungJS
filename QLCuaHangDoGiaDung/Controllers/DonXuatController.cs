@@ -26,11 +26,13 @@ namespace API.Controllers
     public class DonXuatController : ControllerBase
     {
         private readonly DonXuat_BLL bll;
+        private readonly ThongBao_BLL thongBaoBll;
         private readonly IConfiguration config;
 
-        public DonXuatController(DonXuat_BLL _bll, IConfiguration _config)
+        public DonXuatController(DonXuat_BLL _bll, ThongBao_BLL _thongBaoBll, IConfiguration _config)
         {
             bll = _bll;
+            thongBaoBll = _thongBaoBll;
             config = _config;
         }
 
@@ -65,6 +67,8 @@ namespace API.Controllers
 
             if (!bll.UpdateStatus(id, "Đã hủy"))
                 return BadRequest(new { message = "Không thể hủy đơn hàng" });
+
+            CreateOrderNotification(existingOrder.MaKhachHang, existingOrder.MaDonXuat, "Đơn hàng đã bị hủy", $"Đơn hàng #DX{existingOrder.MaDonXuat} đã được hủy.", "Hủy đơn");
 
             return Ok(new { message = "Hủy đơn hàng thành công" });
         }
@@ -144,6 +148,16 @@ namespace API.Controllers
                         }
 
                         tx.Commit();
+
+                        try
+                        {
+                            CreateOrderNotification(order.MaKhachHang, newOrderId, "Đặt hàng thành công", $"Đơn hàng #DX{newOrderId} của bạn đã được tạo thành công và đang chờ quản lý xác nhận.", "Đặt hàng");
+                        }
+                        catch
+                        {
+                            // Không để lỗi thông báo làm fail đơn hàng
+                        }
+
                         return Ok(new
                         {
                             message = "Đặt hàng thành công",
@@ -186,6 +200,15 @@ namespace API.Controllers
             if (!bll.UpdateStatus(id, request.TrangThai))
                 return BadRequest(new { message = "Trạng thái đơn hàng không hợp lệ" });
 
+            if (request.TrangThai == "Đã giao")
+            {
+                CreateOrderNotification(existingOrder.MaKhachHang, existingOrder.MaDonXuat, "Đơn hàng đã được xác nhận", $"Đơn hàng #DX{existingOrder.MaDonXuat} đã được quản lý xác nhận và giao thành công.", "Xác nhận đơn");
+            }
+            else if (request.TrangThai == "Đã hủy")
+            {
+                CreateOrderNotification(existingOrder.MaKhachHang, existingOrder.MaDonXuat, "Đơn hàng đã bị hủy", $"Đơn hàng #DX{existingOrder.MaDonXuat} đã bị quản lý hủy.", "Hủy đơn");
+            }
+
             return Ok(new { message = "Cập nhật trạng thái thành công" });
         }
 
@@ -196,6 +219,33 @@ namespace API.Controllers
                 return BadRequest();
 
             return Ok("Xóa thành công");
+        }
+
+        private void CreateOrderNotification(int? maKhachHang, int maDonXuat, string tieuDe, string noiDung, string loai)
+        {
+            if (!maKhachHang.HasValue || maKhachHang.Value <= 0)
+                return;
+
+            if (thongBaoBll == null)
+                return;
+
+            try
+            {
+                thongBaoBll.Insert(new ThongBao
+                {
+                    MaKhachHang = maKhachHang.Value,
+                    MaDonXuat = maDonXuat,
+                    TieuDe = tieuDe,
+                    NoiDung = noiDung,
+                    Loai = loai,
+                    DaDoc = false,
+                    NgayTao = DateTime.Now
+                });
+            }
+            catch
+            {
+                // Bỏ qua lỗi thông báo để không ảnh hưởng luồng đơn hàng
+            }
         }
     }
 }
