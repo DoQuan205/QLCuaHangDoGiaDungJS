@@ -25,6 +25,22 @@ export interface OrderDetail {
   giaBan: number;
 }
 
+export interface ImportOrder {
+  maDonNhap: number;
+  ngayNhap: string;
+  maNhanVien: number;
+  maNhaCungCap?: number | null;
+  tongTien: number;
+}
+
+export interface ImportOrderDetail {
+  maCTNhap: number;
+  maDonNhap: number;
+  maSanPham: number;
+  soLuong: number;
+  giaNhap: number;
+}
+
 export interface Notification {
   maThongBao: number;
   maKhachHang: number;

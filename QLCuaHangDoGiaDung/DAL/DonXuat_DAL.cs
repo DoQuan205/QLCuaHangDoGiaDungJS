@@ -28,7 +28,8 @@ namespace DAL
             var maDonXuat = Convert.ToInt32(reader["MaDonXuat"]);
             var ngayXuat = reader["NgayXuat"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["NgayXuat"]);
             var tongTien = reader["TongTien"] == DBNull.Value ? 0d : Convert.ToDouble(reader["TongTien"]);
-            var trangThai = reader["TrangThai"] == DBNull.Value ? "Đợi" : reader["TrangThai"].ToString() ?? "Đợi";
+            var trangThaiRaw = reader["TrangThai"] == DBNull.Value ? string.Empty : reader["TrangThai"].ToString() ?? string.Empty;
+            var trangThai = string.IsNullOrWhiteSpace(trangThaiRaw) ? "Đợi" : trangThaiRaw;
 
             donXuat = new DonXuat
             {

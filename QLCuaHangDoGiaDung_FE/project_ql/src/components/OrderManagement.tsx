@@ -14,10 +14,16 @@ function OrderManagement() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
 
-  const getStatusClass = (trangThai: Order['trangThai']) => {
+  const getStatusClass = (trangThai?: Order['trangThai'] | string) => {
     if (trangThai === 'Đã giao') return 'badge badge-success';
     if (trangThai === 'Đã hủy') return 'badge badge-danger';
     return 'badge badge-warning';
+  };
+
+  const getStatusText = (trangThai?: Order['trangThai'] | string) => {
+    if (trangThai === 'Đã giao') return 'Đã giao';
+    if (trangThai === 'Đã hủy') return 'Đã hủy';
+    return 'Đợi';
   };
 
   useEffect(() => {
@@ -25,11 +31,21 @@ function OrderManagement() {
     loadProducts();
   }, []);
 
+  const normalizeOrder = (order: any): Order => ({
+    ...order,
+    maDonXuat: Number(order.maDonXuat ?? order.MaDonXuat ?? 0),
+    ngayXuat: order.ngayXuat ?? order.NgayXuat ?? '',
+    maNhanVien: order.maNhanVien ?? order.MaNhanVien ?? null,
+    maKhachHang: order.maKhachHang ?? order.MaKhachHang ?? null,
+    tongTien: Number(order.tongTien ?? order.TongTien ?? 0),
+    trangThai: (order.trangThai ?? order.TrangThai ?? 'Đợi') || 'Đợi',
+  });
+
   const loadOrders = async () => {
     try {
       setLoading(true);
       const response = await ordersAPI.getAll();
-      setOrders(response.data);
+      setOrders(response.data.map(normalizeOrder));
     } catch (error) {
       console.error('Error loading orders:', error);
       alert('Không thể tải danh sách đơn hàng!');
@@ -180,7 +196,9 @@ function OrderManagement() {
                 <td>KH{order.maKhachHang || 'N/A'}</td>
                 <td>{formatCurrency(order.tongTien)}</td>
                 <td>
-                  <span className={getStatusClass(order.trangThai)}>{order.trangThai}</span>
+                  <span className={getStatusClass(order.trangThai)}>
+                    {getStatusText(order.trangThai)}
+                  </span>
                 </td>
                 <td>
                   <div className="action-buttons">
@@ -239,7 +257,8 @@ function OrderManagement() {
                 <p><strong>Nhân viên:</strong> NV{selectedOrder.maNhanVien}</p>
                 <p><strong>Khách hàng:</strong> KH{selectedOrder.maKhachHang || 'N/A'}</p>
                 <p><strong>Tổng tiền:</strong> {formatCurrency(selectedOrder.tongTien)}</p>
-                <p><strong>Trạng thái:</strong> <span className={getStatusClass(selectedOrder.trangThai)}>{selectedOrder.trangThai}</span></p>
+                  <p><strong>Trạng thái:</strong> <span className={getStatusClass(selectedOrder.trangThai)}>{getStatusText(selectedOrder.trangThai)}</span></p>
+
               </div>
 
               <h4 className="detail-title">Sản phẩm trong đơn</h4>

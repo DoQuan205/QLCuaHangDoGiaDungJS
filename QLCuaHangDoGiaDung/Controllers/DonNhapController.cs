@@ -34,10 +34,11 @@ namespace API.Controllers
         [HttpPost]
         public IActionResult Create(DonNhap dn)
         {
-            if (!bll.Insert(dn))
+            int maDonNhap = bll.Insert(dn);
+            if (maDonNhap <= 0)
                 return BadRequest();
 
-            return Ok("Thêm đơn nhập thành công");
+            return Ok(new { message = "Thêm đơn nhập thành công", maDonNhap });
         }
 
         [HttpPut("{id}")]

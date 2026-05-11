@@ -374,8 +374,6 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
     return 'Đơn hàng đang chờ quản lý xác nhận.';
   };
 
-  const unreadNotificationCount = customerNotifications.filter((notification) => !notification.daDoc).length;
-
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.tenSanPham.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === null || product.maLoai === selectedCategory;

@@ -44,13 +44,14 @@ namespace DAL
             return ds;
         }
 
-        public bool Insert(DonNhap dn)
+        public int Insert(DonNhap dn)
         {
             using (SqlConnection conn = GetConn())
             {
                 conn.Open();
                 string sql = @"INSERT INTO DonNhap
                 (NgayNhap, MaNhanVien, MaNhaCungCap, TongTien)
+                OUTPUT INSERTED.MaDonNhap
                 VALUES (@NgayNhap, @MaNV, @MaNCC, @TongTien)";
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
@@ -59,7 +60,8 @@ namespace DAL
                 cmd.Parameters.AddWithValue("@MaNCC", (object)dn.MaNhaCungCap ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@TongTien", dn.TongTien);
 
-                return cmd.ExecuteNonQuery() > 0;
+                object result = cmd.ExecuteScalar();
+                return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
             }
         }
 

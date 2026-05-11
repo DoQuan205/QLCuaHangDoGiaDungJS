@@ -90,6 +90,20 @@ namespace DAL
             }
         }
 
+        public bool DeleteByMaDonNhap(int maDonNhap)
+        {
+            using (SqlConnection conn = GetConn())
+            {
+                conn.Open();
+                string sql = "DELETE FROM ChiTietDonNhap WHERE MaDonNhap=@MaDonNhap";
+
+                SqlCommand cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@MaDonNhap", maDonNhap);
+
+                return cmd.ExecuteNonQuery() > 0;
+            }
+        }
+
         public bool Update(ChiTietDonNhap ct)
         {
             using (SqlConnection conn = GetConn())
@@ -122,20 +136,6 @@ namespace DAL
 
                 SqlCommand cmd = new SqlCommand(sql, conn);
                 cmd.Parameters.AddWithValue("@Ma", ma);
-
-                return cmd.ExecuteNonQuery() > 0;
-            }
-        }
-
-        public bool DeleteByMaDonNhap(int maDonNhap)
-        {
-            using (SqlConnection conn = GetConn())
-            {
-                conn.Open();
-                string sql = "DELETE FROM ChiTietDonNhap WHERE MaDonNhap=@MaDonNhap";
-
-                SqlCommand cmd = new SqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@MaDonNhap", maDonNhap);
 
                 return cmd.ExecuteNonQuery() > 0;
             }

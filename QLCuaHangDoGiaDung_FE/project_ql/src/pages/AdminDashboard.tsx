@@ -5,6 +5,7 @@ import ProductManagement from '../components/ProductManagement';
 import OrderManagement from '../components/OrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
 import SupplierManagement from '../components/SupplierManagement';
+import ImportOrderManagement from '../components/ImportOrderManagement';
 import type { Product, Order } from '../types';
 import './AdminDashboard.css';
 
@@ -135,6 +136,13 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <i className="fas fa-truck"></i>
             <span>Nhà cung cấp</span>
           </button>
+          <button 
+            className={activeTab === 'import-orders' ? 'active' : ''}
+            onClick={() => setActiveTab('import-orders')}
+          >
+            <i className="fas fa-clipboard-list"></i>
+            <span>Đơn nhập</span>
+          </button>
         </nav>
 
         <button className="btn-logout" onClick={onLogout}>
@@ -218,7 +226,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <td>{formatDate(order.ngayXuat)}</td>
                           <td>{formatCurrency(order.tongTien)}</td>
                           <td>
-                            <span className={order.trangThai === 'Đã giao' ? 'badge badge-success' : 'badge badge-warning'}>
+                            <span className={order.trangThai === 'Đã giao' ? 'badge badge-success' : order.trangThai === 'Đã hủy' ? 'badge badge-danger' : 'badge badge-warning'}>
                               {order.trangThai}
                             </span>
                           </td>
@@ -269,6 +277,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         {activeTab === 'suppliers' && (
           <SupplierManagement />
+        )}
+
+        {activeTab === 'import-orders' && (
+          <ImportOrderManagement />
         )}
       </main>
     </div>

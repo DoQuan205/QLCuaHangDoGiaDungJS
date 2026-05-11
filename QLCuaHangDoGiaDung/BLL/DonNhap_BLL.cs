@@ -17,13 +17,13 @@ namespace BLL
             return dal.GetAll();
         }
 
-        public bool Insert(DonNhap dn)
+        public int Insert(DonNhap dn)
         {
             if (dn.MaNhanVien <= 0)
-                return false;
+                return 0;
 
             if (dn.TongTien < 0)
-                return false;
+                return 0;
 
             return dal.Insert(dn);
         }

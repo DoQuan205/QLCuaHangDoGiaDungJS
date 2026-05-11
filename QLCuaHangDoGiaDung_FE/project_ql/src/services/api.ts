@@ -1,6 +1,6 @@
 import axios from 'axios/dist/browser/axios.cjs';
 
-const API_BASE_URL = 'https://localhost:7172/api';
+const API_BASE_URL = 'https://localhost:7272/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -44,6 +44,24 @@ export const orderDetailsAPI = {
   create: (data: any) => api.post('/ChiTietDonXuat', data),
   delete: (id: number) => api.delete(`/ChiTietDonXuat/${id}`),
   deleteByOrderId: (orderId: number) => api.delete(`/ChiTietDonXuat/DonXuat/${orderId}`),
+};
+
+// Import orders API
+export const importOrdersAPI = {
+  getAll: () => api.get('/DonNhap'),
+  getById: (id: number) => api.get(`/DonNhap/${id}`),
+  create: (data: any) => api.post('/DonNhap', data),
+  update: (id: number, data: any) => api.put(`/DonNhap/${id}`, data),
+  delete: (id: number) => api.delete(`/DonNhap/${id}`),
+};
+
+export const importOrderDetailsAPI = {
+  getAll: () => api.get('/ChiTietDonNhap'),
+  getByOrderId: (orderId: number) => api.get(`/ChiTietDonNhap/DonNhap/${orderId}`),
+  create: (data: any) => api.post('/ChiTietDonNhap', data),
+  update: (id: number, data: any) => api.put(`/ChiTietDonNhap/${id}`, data),
+  delete: (id: number) => api.delete(`/ChiTietDonNhap/${id}`),
+  deleteByOrderId: (orderId: number) => api.delete(`/ChiTietDonNhap/DonNhap/${orderId}`),
 };
 
 // Customers API
