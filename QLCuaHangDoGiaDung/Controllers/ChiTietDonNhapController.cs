@@ -9,10 +9,12 @@ namespace API.Controllers
     public class ChiTietDonNhapController : ControllerBase
     {
         private readonly ChiTietDonNhap_BLL bll;
+        private readonly SanPham_BLL sanPhamBll;
 
-        public ChiTietDonNhapController(ChiTietDonNhap_BLL _bll)
+        public ChiTietDonNhapController(ChiTietDonNhap_BLL _bll, SanPham_BLL _sanPhamBll)
         {
             bll = _bll;
+            sanPhamBll = _sanPhamBll;
         }
 
         [HttpGet]
@@ -42,6 +44,14 @@ namespace API.Controllers
         {
             if (!bll.Insert(ct))
                 return BadRequest();
+
+            var product = sanPhamBll.GetById(ct.MaSanPham);
+            if (product == null)
+                return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+            product.SoLuong += ct.SoLuong;
+            if (!sanPhamBll.Update(product))
+                return BadRequest(new { message = "Không thể cập nhật tồn kho sản phẩm" });
 
             return Ok("Thêm chi tiết đơn nhập thành công");
         }

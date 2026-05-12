@@ -26,12 +26,14 @@ namespace API.Controllers
     public class DonXuatController : ControllerBase
     {
         private readonly DonXuat_BLL bll;
+        private readonly ChiTietDonXuat_BLL chiTietDonXuatBll;
         private readonly ThongBao_BLL thongBaoBll;
         private readonly IConfiguration config;
 
-        public DonXuatController(DonXuat_BLL _bll, ThongBao_BLL _thongBaoBll, IConfiguration _config)
+        public DonXuatController(DonXuat_BLL _bll, ChiTietDonXuat_BLL _chiTietDonXuatBll, ThongBao_BLL _thongBaoBll, IConfiguration _config)
         {
             bll = _bll;
+            chiTietDonXuatBll = _chiTietDonXuatBll;
             thongBaoBll = _thongBaoBll;
             config = _config;
         }
@@ -197,8 +199,55 @@ namespace API.Controllers
             if (existingOrder == null)
                 return NotFound(new { message = "Không tìm thấy đơn hàng" });
 
-            if (!bll.UpdateStatus(id, request.TrangThai))
-                return BadRequest(new { message = "Trạng thái đơn hàng không hợp lệ" });
+            if (string.IsNullOrWhiteSpace(request?.TrangThai))
+                return BadRequest(new { message = "Thiếu trạng thái đơn hàng" });
+
+            if (existingOrder.TrangThai == request.TrangThai)
+                return Ok(new { message = "Trạng thái đơn hàng không thay đổi" });
+
+            if (request.TrangThai == "Đã giao" && existingOrder.TrangThai != "Đã giao")
+            {
+                var details = chiTietDonXuatBll.GetByMaDonXuat(id);
+                if (details == null || details.Count == 0)
+                    return BadRequest(new { message = "Không có chi tiết đơn hàng để cập nhật tồn kho" });
+
+                using (var conn = new SqlConnection(config.GetConnectionString("DefaultConnection")))
+                {
+                    conn.Open();
+                    using (var tx = conn.BeginTransaction())
+                    {
+                        try
+                        {
+                            foreach (var ct in details)
+                            {
+                                var updateStockSql = @"UPDATE SanPham
+                                SET SoLuong = CASE WHEN SoLuong - @SoLuong < 0 THEN 0 ELSE SoLuong - @SoLuong END
+                                WHERE MaSanPham = @MaSanPham";
+
+                                using var cmd = new SqlCommand(updateStockSql, conn, tx);
+                                cmd.Parameters.AddWithValue("@SoLuong", ct.SoLuong);
+                                cmd.Parameters.AddWithValue("@MaSanPham", ct.MaSanPham);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            if (!bll.UpdateStatus(id, request.TrangThai))
+                                throw new Exception("Không thể cập nhật trạng thái đơn hàng");
+
+                            tx.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            tx.Rollback();
+                            return BadRequest(new { message = "Không thể cập nhật tồn kho khi xác nhận giao hàng", detail = ex.Message });
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (!bll.UpdateStatus(id, request.TrangThai))
+                    return BadRequest(new { message = "Trạng thái đơn hàng không hợp lệ" });
+            }
 
             if (request.TrangThai == "Đã giao")
             {
