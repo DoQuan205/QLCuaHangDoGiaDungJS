@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using QLCuaHangDoGiaDung.Models;
 
@@ -62,7 +62,7 @@ namespace DAL
                 cmd.Parameters.AddWithValue("@MaLoai", sp.MaLoai);
                 cmd.Parameters.AddWithValue("@Gia", sp.GiaBan);
                 cmd.Parameters.AddWithValue("@SL", sp.SoLuong);
-                cmd.Parameters.AddWithValue("@Hinh", sp.HinhAnh);
+                cmd.Parameters.Add("@Hinh", System.Data.SqlDbType.NVarChar, 500).Value = (object)sp.HinhAnh ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@MoTa", sp.MoTa);
 
                 return cmd.ExecuteNonQuery() > 0;
@@ -90,7 +90,7 @@ namespace DAL
                 cmd.Parameters.AddWithValue("@MaLoai", sp.MaLoai);
                 cmd.Parameters.AddWithValue("@Gia", sp.GiaBan);
                 cmd.Parameters.AddWithValue("@SL", sp.SoLuong);
-                cmd.Parameters.AddWithValue("@Hinh", sp.HinhAnh);
+                cmd.Parameters.Add("@Hinh", System.Data.SqlDbType.NVarChar, 500).Value = (object)sp.HinhAnh ?? DBNull.Value;
                 cmd.Parameters.AddWithValue("@MoTa", sp.MoTa);
 
                 return cmd.ExecuteNonQuery() > 0;

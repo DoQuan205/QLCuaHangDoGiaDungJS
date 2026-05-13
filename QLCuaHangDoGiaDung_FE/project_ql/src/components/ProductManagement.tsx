@@ -148,6 +148,8 @@ function ProductManagement() {
 
     if (formData.hinhAnh && !isValidUrl(formData.hinhAnh)) {
       errors.hinhAnh = 'URL hình ảnh không hợp lệ';
+    } else if (formData.hinhAnh.length > 500) {
+      errors.hinhAnh = 'URL hình ảnh không được vượt quá 500 ký tự';
     }
 
     setFormErrors(errors);
@@ -267,15 +269,15 @@ function ProductManagement() {
       <div className="management-header">
         <h2>Quản lý Sản phẩm</h2>
         <div className="header-actions">
-          <div className="search-box">
-            <i className="fas fa-search"></i>
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+            <div className="search-box">
+             <i className="fas fa-search"></i>
+             <input
+               type="text"
+               placeholder="Tìm theo tên hoặc loại sản phẩm..."
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+             />
+           </div>
           <button className="btn-add" onClick={handleAdd}>
             <i className="fas fa-plus"></i>
             Thêm sản phẩm
@@ -445,15 +447,15 @@ function ProductManagement() {
 
               <div className="form-group">
                 <label>Hình ảnh (URL)</label>
-                <input
-                  type="text"
-                  name="hinhAnh"
-                  value={formData.hinhAnh}
-                  onChange={handleChange}
-                  disabled={modalMode === 'view'}
-                  placeholder="https://example.com/image.jpg"
-                  className={formErrors.hinhAnh ? 'error' : ''}
-                />
+                    <input
+                      type="text"
+                      name="hinhAnh"
+                      value={formData.hinhAnh}
+                      onChange={handleChange}
+                      disabled={modalMode === 'view'}
+                      maxLength={500}
+                      className={formErrors.hinhAnh ? 'error' : ''}
+                    />
                 {formErrors.hinhAnh && (
                   <span className="error-message">{formErrors.hinhAnh}</span>
                 )}

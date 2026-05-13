@@ -68,7 +68,7 @@ CREATE TABLE SanPham (
     MaLoai INT,
     GiaBan DECIMAL(18,2),
     SoLuong INT,
-    HinhAnh NVARCHAR(200),
+    HinhAnh NVARCHAR(500),
     MoTa NVARCHAR(200),
 
     FOREIGN KEY (MaLoai) REFERENCES LoaiSanPham(MaLoai)

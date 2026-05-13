@@ -888,6 +888,60 @@
   gap: 16px;
 }
 
+.notification-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-summary h4 {
+  margin: 0;
+  color: #222;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.notification-item {
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #ee4d2d;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  transform: translateY(-1px);
+  border-color: #ee4d2d;
+  box-shadow: 0 4px 12px rgba(238, 77, 45, 0.12);
+}
+
+.notification-item.unread {
+  background: #fff7f2;
+}
+
+.notification-item.read {
+  background: #fff;
+  opacity: 0.9;
+}
+
+.notification-item strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #222;
+}
+
+.notification-item p {
+  margin: 0 0 6px;
+  color: #444;
+}
+
+.notification-item small {
+  color: #777;
+}
+
 .account-order-card {
   border: 1px solid #eee;
   border-radius: 8px;
@@ -1108,6 +1162,42 @@
 .order-notification {
   margin-top: 0.65rem;
   color: #555;
+}
+
+.order-detail-modal .modal {
+  width: min(860px, 92vw);
+}
+
+.order-detail-modal .modal-body {
+  max-height: 78vh;
+  overflow-y: auto;
+}
+
+.order-detail-drawer .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.order-detail-drawer .detail-grid p {
+  margin: 0;
+}
+
+.detail-title {
+  margin: 1rem 0 0.75rem;
+  color: #222;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.detail-table {
+  font-size: 0.88rem;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 0.7rem 0.6rem;
 }
 
 .loading-container {

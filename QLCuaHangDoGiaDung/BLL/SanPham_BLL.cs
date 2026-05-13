@@ -39,6 +39,9 @@ namespace BLL
             if (sp.GiaBan <= 0 || sp.SoLuong < 0 || sp.MaLoai <= 0)
                 return false;
 
+            if (!string.IsNullOrEmpty(sp.HinhAnh) && sp.HinhAnh.Length > 500)
+                return false;
+
             return dal.Update(sp);
         }
 

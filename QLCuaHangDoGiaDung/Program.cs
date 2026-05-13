@@ -111,6 +111,22 @@ BEGIN
 END";
         var createThongBaoCmd = new SqlCommand(createThongBaoTableSql, conn);
         createThongBaoCmd.ExecuteNonQuery();
+
+        var ensureHinhAnhColumnSql = @"
+IF EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'dbo'
+      AND TABLE_NAME = 'SanPham'
+      AND COLUMN_NAME = 'HinhAnh'
+      AND CHARACTER_MAXIMUM_LENGTH IS NOT NULL
+      AND CHARACTER_MAXIMUM_LENGTH < 500
+)
+BEGIN
+    ALTER TABLE dbo.SanPham ALTER COLUMN HinhAnh NVARCHAR(500) NULL;
+END";
+        var ensureHinhAnhColumnCmd = new SqlCommand(ensureHinhAnhColumnSql, conn);
+        ensureHinhAnhColumnCmd.ExecuteNonQuery();
     }
 }
 

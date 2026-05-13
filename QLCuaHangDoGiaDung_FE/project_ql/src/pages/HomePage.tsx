@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { productsAPI, categoriesAPI, ordersAPI, customersAPI, notificationsAPI } from '../services/api';
-import type { Product, Category, User, Order, Notification } from '../types';
+import { productsAPI, categoriesAPI, ordersAPI, customersAPI, notificationsAPI, orderDetailsAPI } from '../services/api';
+import type { Product, Category, User, Order, OrderDetail, Notification } from '../types';
 import AuthModal from '../components/AuthModal';
 import './HomePage.css';
 
@@ -26,6 +26,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
   const [showOrders, setShowOrders] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [showAccountPanel, setShowAccountPanel] = useState(false);
+  const [accountTab, setAccountTab] = useState<'orders' | 'notifications'>('orders');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [searchTerm, setSearchTerm] = useState('');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -34,6 +35,10 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<OrderDetail[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [showOrderDetailModal, setShowOrderDetailModal] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('popular');
 
   // Xử lý font Tiếng việt, hình ảnh
@@ -120,7 +125,21 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
       return;
     }
 
-    await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
+    setAccountTab('orders');
+    await loadCustomerOrders();
+    setShowAccountPanel(true);
+  };
+
+  const openNotificationsPanel = async () => {
+    if (!currentUser) {
+      alert('Vui lòng đăng nhập để xem thông báo!');
+      setAuthMode('login');
+      setShowAuth(true);
+      return;
+    }
+
+    setAccountTab('notifications');
+    await loadCustomerNotifications();
     setShowAccountPanel(true);
   };
 
@@ -207,6 +226,39 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
     } finally {
       setNotificationsLoading(false);
     }
+  };
+
+  const openOrderDetail = async (orderId: number) => {
+    try {
+      setDetailLoading(true);
+      const order = customerOrders.find((item) => item.maDonXuat === orderId) ?? null;
+      setSelectedOrder(order);
+      setShowOrderDetailModal(true);
+      const response = await orderDetailsAPI.getByOrderId(orderId);
+      setSelectedOrderDetails(response.data);
+    } catch (error) {
+      console.error('Error loading order detail:', error);
+      alert('Không thể tải chi tiết đơn hàng!');
+      setShowOrderDetailModal(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const openNotificationOrderDetail = async (notification: Notification) => {
+    if (!notification.maDonXuat) {
+      await markNotificationAsRead(notification.maThongBao);
+      return;
+    }
+
+    await markNotificationAsRead(notification.maThongBao);
+    await openOrderDetail(notification.maDonXuat);
+  };
+
+  const closeOrderDetail = () => {
+    setShowOrderDetailModal(false);
+    setSelectedOrder(null);
+    setSelectedOrderDetails([]);
   };
 
   const markNotificationAsRead = async (notificationId: number) => {
@@ -375,7 +427,12 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
   };
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.tenSanPham.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchValue = searchTerm.trim().toLowerCase();
+    const categoryName = getCategoryName(product.maLoai).toLowerCase();
+    const matchesSearch =
+      searchValue === '' ||
+      product.tenSanPham.toLowerCase().includes(searchValue) ||
+      categoryName.includes(searchValue);
     const matchesCategory = selectedCategory === null || product.maLoai === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -412,7 +469,7 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
         <div className="shop-topbar">
           <div className="container topbar-content">
             <div className="topbar-spacer"></div>
-            <button><i className="fas fa-bell"></i> Thông Báo</button>
+            <button onClick={openNotificationsPanel}><i className="fas fa-bell"></i> Thông Báo</button>
             <button><i className="fas fa-question-circle"></i> Hỗ Trợ</button>
             {currentUser ? (
               <>
@@ -444,12 +501,12 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
             </button>
             <div className="search-area">
               <div className="search-bar">
-                <input
-                  type="text"
-                  placeholder="ShopMall bao ship 0Đ - tìm đồ gia dụng ngay!"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên hoặc loại sản phẩm..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 <button className="search-submit"><i className="fas fa-search"></i></button>
               </div>
             </div>
@@ -747,91 +804,170 @@ function HomePage({ currentUser, onLoginSuccess, onLogout }: HomePageProps) {
         <div className="account-panel">
           <div className="account-panel-overlay" onClick={() => setShowAccountPanel(false)}></div>
           <div className="account-panel-drawer">
-            <div className="account-panel-sidebar">
-              <div className="account-profile">
-                <div className="account-avatar">{(currentUser.fullName || currentUser.tenDangNhap || 'U').charAt(0).toUpperCase()}</div>
-                <div>
-                  <h3>{currentUser.fullName || currentUser.tenDangNhap}</h3>
-                  <button className="link-button" onClick={openAccountPanel}>Sửa Hồ Sơ</button>
+              <div className="account-panel-sidebar">
+                <div className="account-profile">
+                  <div className="account-avatar">{(currentUser.fullName || currentUser.tenDangNhap || 'U').charAt(0).toUpperCase()}</div>
+                  <div>
+                    <h3>{currentUser.fullName || currentUser.tenDangNhap}</h3>
+                    <button className="link-button" onClick={openAccountPanel}>Sửa Hồ Sơ</button>
+                  </div>
                 </div>
+                <button
+                  className={accountTab === 'orders' ? 'account-nav active' : 'account-nav'}
+                  onClick={openAccountPanel}
+                >
+                  <i className="fas fa-user"></i> Tài Khoản Của Tôi
+                </button>
+                <button
+                  className={accountTab === 'orders' ? 'account-nav active' : 'account-nav'}
+                  onClick={openAccountPanel}
+                >
+                  <i className="fas fa-shopping-bag"></i> Đơn Mua
+                </button>
+                <button
+                  className={accountTab === 'notifications' ? 'account-nav active' : 'account-nav'}
+                  onClick={openNotificationsPanel}
+                >
+                  <i className="fas fa-bell"></i> Thông Báo
+                </button>
+                <button className="account-nav"><i className="fas fa-ticket-alt"></i> Kho Voucher</button>
               </div>
-              <button className="account-nav active"><i className="fas fa-user"></i> Tài Khoản Của Tôi</button>
-              <button className="account-nav active"><i className="fas fa-shopping-bag"></i> Đơn Mua</button>
-              <button className="account-nav"><i className="fas fa-bell"></i> Thông Báo</button>
-              <button className="account-nav"><i className="fas fa-ticket-alt"></i> Kho Voucher</button>
-              <button className="account-nav"><i className="fas fa-coins"></i> Shopee Xu</button>
-            </div>
-            <div className="account-panel-content">
-              <div className="notification-summary">
-                <h4>Thông báo mới</h4>
-                {notificationsLoading ? (
-                  <p className="empty-cart">Đang tải thông báo...</p>
-                ) : customerNotifications.length > 0 ? (
-                  customerNotifications.slice(0, 5).map((notification) => (
-                    <div
-                      key={notification.maThongBao}
-                      className={`notification-item ${notification.daDoc ? 'read' : 'unread'}`}
-                      onClick={() => markNotificationAsRead(notification.maThongBao)}
-                    >
-                      <strong>{notification.tieuDe}</strong>
-                      <p>{notification.noiDung}</p>
-                      <small>{new Date(notification.ngayTao).toLocaleString('vi-VN')}</small>
-                    </div>
-                  ))
-                ) : (
-                  <p className="empty-cart">Bạn chưa có thông báo nào.</p>
-                )}
-              </div>
-
-              <div className="orders-tabs">
-                <button className="active">Tất cả</button>
-                <button>Chờ thanh toán ({customerOrders.length})</button>
-                <button>Vận chuyển</button>
-                <button>Đang giao</button>
-                <button>Hoàn thành</button>
-                <button>Đã hủy</button>
-                <button>Trả hàng/Hoàn tiền</button>
-              </div>
-
-              <div className="cart-items orders-list account-orders-list">
-                {ordersLoading ? (
-                  <p className="empty-cart">Đang tải đơn hàng...</p>
-                ) : customerOrders.length > 0 ? (
-                  customerOrders.map((order) => (
-                    <div key={order.maDonXuat} className="account-order-card">
-                      <div className="order-card-header">
-                        <h4>GiaDung Mall</h4>
-                        <span className={getOrderStatusClass(order.trangThai)}>{order.trangThai}</span>
-                      </div>
-                      <div className="account-order-body">
-                        <div className="account-order-thumb"><i className="fas fa-box-open"></i></div>
-                        <div className="account-order-info">
-                          <p><strong>Đơn hàng:</strong> #DX{order.maDonXuat}</p>
-                          <p><strong>Ngày đặt:</strong> {new Date(order.ngayXuat).toLocaleDateString('vi-VN')}</p>
-                          <p><strong>Tổng tiền:</strong> {formatCurrency(order.tongTien)}</p>
-                          <p className="order-notification">{getOrderNotification(order.trangThai)}</p>
-                          <div className="account-order-actions">
-                            <button className="btn-order-detail" onClick={() => alert(`Đơn #DX${order.maDonXuat}\nTrạng thái: ${order.trangThai}`)}>Xem chi tiết</button>
-                            {order.trangThai === 'Đợi' && (
-                              <button className="btn-order-cancel" onClick={async () => {
-                                try {
-                                  await ordersAPI.cancel(order.maDonXuat);
-                                  await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
-                                } catch (error) {
-                                  console.error('Error canceling customer order:', error);
-                                  alert('Không thể hủy đơn hàng!');
-                                }
-                              }}>Hủy đơn</button>
-                            )}
-                          </div>
+              <div className="account-panel-content">
+                {accountTab === 'notifications' ? (
+                  <div className="notification-summary">
+                    <h4>Thông báo mới</h4>
+                    {notificationsLoading ? (
+                      <p className="empty-cart">Đang tải thông báo...</p>
+                    ) : customerNotifications.length > 0 ? (
+                      customerNotifications.slice(0, 5).map((notification) => (
+                        <div
+                          key={notification.maThongBao}
+                          className={`notification-item ${notification.daDoc ? 'read' : 'unread'}`}
+                          onClick={() => openNotificationOrderDetail(notification)}
+                        >
+                          <strong>{notification.tieuDe}</strong>
+                          <p>{notification.noiDung}</p>
+                          <small>{new Date(notification.ngayTao).toLocaleString('vi-VN')}</small>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      ))
+                    ) : (
+                      <p className="empty-cart">Bạn chưa có thông báo nào.</p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="empty-cart">Bạn chưa có đơn hàng nào.</p>
+                  <>
+                    <div className="orders-tabs">
+                      <button className="active">Tất cả</button>
+                      <button>Chờ thanh toán ({customerOrders.length})</button>
+                      <button>Vận chuyển</button>
+                      <button>Đang giao</button>
+                      <button>Hoàn thành</button>
+                      <button>Đã hủy</button>
+                      <button>Trả hàng/Hoàn tiền</button>
+                    </div>
+
+                    <div className="cart-items orders-list account-orders-list">
+                      {ordersLoading ? (
+                        <p className="empty-cart">Đang tải đơn hàng...</p>
+                      ) : customerOrders.length > 0 ? (
+                        customerOrders.map((order) => (
+                          <div key={order.maDonXuat} className="account-order-card">
+                            <div className="order-card-header">
+                              <h4>GiaDung Mall</h4>
+                              <span className={getOrderStatusClass(order.trangThai)}>{order.trangThai}</span>
+                            </div>
+                            <div className="account-order-body">
+                              <div className="account-order-thumb"><i className="fas fa-box-open"></i></div>
+                              <div className="account-order-info">
+                                <p><strong>Đơn hàng:</strong> #DX{order.maDonXuat}</p>
+                                <p><strong>Ngày đặt:</strong> {new Date(order.ngayXuat).toLocaleDateString('vi-VN')}</p>
+                                <p><strong>Tổng tiền:</strong> {formatCurrency(order.tongTien)}</p>
+                                <p className="order-notification">{getOrderNotification(order.trangThai)}</p>
+                                <div className="account-order-actions">
+                                  <button className="btn-order-detail" onClick={() => openOrderDetail(order.maDonXuat)}>Xem chi tiết</button>
+                                  {order.trangThai === 'Đợi' && (
+                                    <button className="btn-order-cancel" onClick={async () => {
+                                      try {
+                                        await ordersAPI.cancel(order.maDonXuat);
+                                        await Promise.all([loadCustomerOrders(), loadCustomerNotifications()]);
+                                      } catch (error) {
+                                        console.error('Error canceling customer order:', error);
+                                        alert('Không thể hủy đơn hàng!');
+                                      }
+                                    }}>Hủy đơn</button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="empty-cart">Bạn chưa có đơn hàng nào.</p>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
+          </div>
+        </div>
+      )}
+
+      {showOrderDetailModal && selectedOrder && (
+        <div className="order-detail-modal">
+          <div className="modal-overlay" onClick={closeOrderDetail}></div>
+          <div className="modal order-detail-drawer">
+            <div className="modal-header">
+              <h3>Chi tiết đơn hàng #DX{selectedOrder.maDonXuat}</h3>
+              <button className="btn-close" onClick={closeOrderDetail}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="detail-grid">
+                <p><strong>Ngày xuất:</strong> {new Date(selectedOrder.ngayXuat).toLocaleDateString('vi-VN')}</p>
+                <p><strong>Nhân viên:</strong> NV{selectedOrder.maNhanVien ?? 'N/A'}</p>
+                <p><strong>Khách hàng:</strong> KH{selectedOrder.maKhachHang ?? 'N/A'}</p>
+                <p><strong>Tổng tiền:</strong> {formatCurrency(selectedOrder.tongTien)}</p>
+                <p><strong>Trạng thái:</strong> <span className={getOrderStatusClass(selectedOrder.trangThai)}>{selectedOrder.trangThai}</span></p>
+              </div>
+
+              <h4 className="detail-title">Sản phẩm trong đơn</h4>
+
+              {detailLoading ? (
+                <div className="loading-container">
+                  <div className="spinner"></div>
+                  <p>Đang tải chi tiết đơn hàng...</p>
+                </div>
+              ) : selectedOrderDetails.length > 0 ? (
+                <table className="data-table detail-table">
+                  <thead>
+                    <tr>
+                      <th>Mã SP</th>
+                      <th>Tên sản phẩm</th>
+                      <th>Số lượng</th>
+                      <th>Giá bán</th>
+                      <th>Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrderDetails.map((detail) => (
+                      <tr key={detail.maCTXuat}>
+                        <td>#{detail.maSanPham}</td>
+                        <td>{products.find((product) => product.maSanPham === detail.maSanPham)?.tenSanPham ?? `SP${detail.maSanPham}`}</td>
+                        <td>{detail.soLuong}</td>
+                        <td>{formatCurrency(detail.giaBan)}</td>
+                        <td>{formatCurrency(detail.soLuong * detail.giaBan)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="no-data">
+                  <i className="fas fa-receipt"></i>
+                  <p>Đơn hàng chưa có chi tiết</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
